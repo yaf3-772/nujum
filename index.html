@@ -106,10 +106,11 @@ header p{color:#94a3b8}
   <div class="toast" id="toast"></div>
   <div class="goal" id="goal"></div>
   <div id="prize"></div>
+  <div id="cong"></div>
   <div id="daily"></div>
   <div id="weekly"></div>
   <div class="podium-section">
-    <div class="tabs" style="margin-bottom:12px"><button class="tab" id="vt-month" onclick="setView('month')"></button><button class="tab" id="vt-all" onclick="setView('all')">🏆 الإجمالي</button></div>
+    <div class="tabs" style="margin-bottom:12px"><button class="tab" id="vt-month" style="font-size:.85rem;padding:10px 4px" onclick="setView('month')"></button><button class="tab" id="vt-week" style="font-size:.85rem;padding:10px 4px" onclick="setView('week')">🗓️ الأسبوع</button><button class="tab" id="vt-all" style="font-size:.85rem;padding:10px 4px" onclick="setView('all')">🏆 الإجمالي</button></div>
     <div class="podium-title" id="podTitle"></div>
     <div class="podium-grid">
       <div class="pc rank-2"><div class="pav">🥈</div><div class="pn" id="n2"></div><div class="pp" id="s2"></div></div>
@@ -167,6 +168,7 @@ header p{color:#94a3b8}
     <div class="st">يوم إغلاق الأسبوع (منه تبدأ الاستحقاقات الأسبوعية بالظهور)</div><select id="setC" class="fld"><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option></select>
     <div class="st">حساب الشهر لجائزة الأفضل</div><select id="setCal" class="fld"><option value="g">ميلادي (نوفمبر، ديسمبر...)</option><option value="h">هجري (رجب، شعبان...)</option></select>
     <div class="st">جائزة أفضل طالب في الشهر (تظهر في الشاشة والشهادة)</div><input id="setMP" class="fld" placeholder="مثال: هدية قيّمة / رحلة">
+    <div class="st">جوائز التخصص الشهرية (اختياري)</div><input id="setCP" class="fld" placeholder="مثال: هدية صغيرة لكل فائز">
     <div id="setLists"></div>
     <div style="margin-top:16px;display:flex;justify-content:space-between"><button class="btn add" onclick="saveSet()">💾 حفظ</button><button class="btn" onclick="closeSet()">إلغاء</button></div>
   </div>
@@ -192,6 +194,7 @@ header p{color:#94a3b8}
 <div class="ov" id="hov">
   <div class="modal">
     <div class="mh"><h2 id="hTitle"></h2><button class="x" onclick="closeHist()">&times;</button></div>
+    <div id="hBadges"></div>
     <div id="hList" style="max-height:380px;overflow-y:auto"></div>
     <div style="margin-top:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.1);padding-top:12px">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -263,7 +266,7 @@ const META_KEY='quran_tpl_meta_v1';
 let meta={local:{target:100,prize:'اكتب هدف الحلقة (اضغط هنا)'},remote:{target:100,prize:'اكتب هدف الحلقة (اضغط هنا)'}};
 try{const m=JSON.parse(localStorage.getItem(META_KEY));if(m&&m.local&&m.remote)meta=m}catch(e){}
 const SHOP=[[10,'✏️ قلم مميز'],[20,'🍬 حلوى'],[30,'🎤 اختيار نشيد أو دعاء الحلقة'],[50,'🧑‍🏫 مساعد المعلم في حصة'],[80,'🎁 هدية كبرى']];
-const LEVELS=[[0,'🌱 برعم النور'],[21,'🌿 غصن مثمر'],[51,'🌙 بدر الحلقة'],[101,'⭐ نجم الحلقة'],[200,'👑 تاج الحلقة']];
+const LEVELS=[[0,'🌱 برعم النور'],[10,'🌿 غصن مثمر'],[25,'🌸 زهرة الحلقة'],[50,'🌙 بدر الحلقة'],[90,'⭐ نجم الحلقة'],[150,'🌟 نجم متألق'],[250,'👑 تاج الحلقة'],[400,'💎 جوهرة الحلقة']];
 const lvl=p=>([...LEVELS].reverse().find(l=>p>=l[0])||LEVELS[0])[1];
 const QUOTES=['«خيركم من تعلّم القرآن وعلّمه»','﴿وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا﴾','«اقرؤوا القرآن فإنه يأتي يوم القيامة شفيعاً لأصحابه»','«الماهر بالقرآن مع السفرة الكرام البررة»'];
 const HN=()=>(meta.cfg&&meta.cfg.halaqa)||'اسم الحلقة',TN=()=>(meta.cfg&&meta.cfg.teacher)||'اسم المعلم';
@@ -297,7 +300,24 @@ function addMonth(s,p,t){
   const d=new Date(t);s.m=s.m||{};meta.ml=meta.ml||{};
   for(const c of ['g','h']){const k=mkeyC(d,c);s.m[k]=(s.m[k]||0)+p;if(!meta.ml[k])meta.ml[k]=labelOf(d,c)}
 }
+/* عدّادات تراكمية للشارات والجوائز التخصصية (تُطابَق بعبارات اسم البند) */
+function catize(r,p){
+  r=String(r);if(p<=0||r.startsWith('🗓️'))return null;
+  const mm=/×(\d+)\s*$/.exec(r),n=mm?+mm[1]:1,o={};
+  if(r.includes('زيادة في التسميع'))o.ext=(r.includes('وجه كامل')?15:r.includes('3 أسطر')?3:1)*n;
+  else if(r.includes('تسميع المقرر'))o.rec=n;
+  if(r.includes('بلا أخطاء'))o.clean=n;
+  if(r.includes('إتقان التجويد'))o.tj=n;
+  if(r.includes('مساعدة زميل'))o.hp=n;
+  if(r.includes('مراجعة'))o.rv=n;
+  return o;
+}
+function addCats(s,o,t){
+  if(!o)return;const d=new Date(t);s.c=s.c||{};s.mc=s.mc||{};
+  for(const k in o){s.c[k]=(s.c[k]||0)+o[k];for(const c of ['g','h']){const mk=mkeyC(d,c),m=(s.mc[mk]=s.mc[mk]||{});m[k]=(m[k]||0)+o[k]}}
+}
 function migrateM(){
+  for(const k of ['local','remote'])data[k].forEach(s=>{if(!s.c){s.c={};s.mc={};s.history.forEach(h=>{if(h.ts&&h.points>0&&!h.spent)addCats(s,catize(h.reason,h.points),h.ts)})}});
   for(const k of ['local','remote'])data[k].forEach(s=>{if(!s.m){s.m={};s.history.forEach(h=>{if(h.ts&&h.points&&!h.spent)addMonth(s,h.points,h.ts)})}});
 }
 function monthBoard(k){return S().map(s=>({s,n:s.name,p:mp(s,k)})).filter(x=>x.p>0).sort((a,b)=>b.p-a.p)}
@@ -310,7 +330,7 @@ function topOf(k){const d=mdone()[k];if(d&&d.top)return d.top;return monthBoard(
 const winners=top=>top.filter(x=>x.p===top[0].p);
 const UNDO=[];
 function snap(label){
-  UNDO.push({label,d:JSON.stringify({local:data.local,remote:data.remote,star:[meta.local.star||null,meta.remote.star||null],sl:[meta.local.starLog||[],meta.remote.starLog||[]],md:[meta.local.mdone||{},meta.remote.mdone||{}]})});
+  UNDO.push({label,d:JSON.stringify({local:data.local,remote:data.remote,star:[meta.local.star||null,meta.remote.star||null],sl:[meta.local.starLog||[],meta.remote.starLog||[]],md:[meta.local.mdone||{},meta.remote.mdone||{}],cg:[meta.local.cg||[],meta.remote.cg||[]]})});
   if(UNDO.length>30)UNDO.shift();updUndo();
 }
 function updUndo(){
@@ -322,7 +342,7 @@ function undo(){
   const o=JSON.parse(u.d);
   const mOpen=document.getElementById('ov').style.display==='flex',hOpen=document.getElementById('hov').style.display==='flex';
   data.local=o.local;data.remote=o.remote;
-  ['local','remote'].forEach((k,i)=>{if(o.star[i])meta[k].star=o.star[i];else delete meta[k].star;if(o.sl)meta[k].starLog=o.sl[i];if(o.md)meta[k].mdone=o.md[i]});
+  ['local','remote'].forEach((k,i)=>{if(o.star[i])meta[k].star=o.star[i];else delete meta[k].star;if(o.sl)meta[k].starLog=o.sl[i];if(o.md)meta[k].mdone=o.md[i];if(o.cg)meta[k].cg=o.cg[i]});
   if(sel&&!find(sel)){closeModal();closeHist()}
   render();
   if((sel||grp.length)&&mOpen)refreshModal();
@@ -352,14 +372,14 @@ function beep(up){
 }
 function switchLeague(k){cur=k;selSet.clear();render()}
 function render(){
-  migrateM();
-  const L=LEAGUES[cur],list=S(),vm=view()==='month',ck=curKey();
-  const rv=s=>vm?mp(s,ck):s.score;
+  migrateM();checkGrowth();
+  const L=LEAGUES[cur],list=S(),vm=view()!=='all',ck=curKey();
+  const rv=rvOf();
   list.sort((a,b)=>rv(b)-rv(a)||b.score-a.score);
   ['local','remote'].forEach(k=>document.getElementById('tab-'+k).classList.toggle('on',k===cur));
-  document.getElementById('vt-month').classList.toggle('on',vm);document.getElementById('vt-all').classList.toggle('on',!vm);
+  document.getElementById('vt-month').classList.toggle('on',view()==='month');document.getElementById('vt-week').classList.toggle('on',view()==='week');document.getElementById('vt-all').classList.toggle('on',!vm);
   document.getElementById('vt-month').textContent='📅 '+labelOf(new Date(),calOf());
-  document.getElementById('badge').textContent='🕌 '+HN();document.getElementById('tname').textContent=TN();renderExtras();renderPrize();
+  document.getElementById('badge').textContent='🕌 '+HN();document.getElementById('tname').textContent=TN();renderExtras();renderPrize();renderCong();
   document.getElementById('podTitle').textContent=L.pod;
   [1,2,3].forEach(i=>{
     const s=list[i-1],ok=s&&(!vm||rv(s)>0);
@@ -372,7 +392,7 @@ function render(){
     return `
    <div class="row" ${selMode?`onclick="toggleSel(${s.id})" style="cursor:pointer;${on?'border-color:var(--pri);background:rgba(99,102,241,.18)':''}"`:''}>
     <div class="l">${selMode?`<span style="font-size:1.4rem">${on?'☑️':'⬜'}</span>`:''}<div class="rn ${i<3&&rk?'t'+(i+1):''}">${i+1}</div><div class="av" ${selMode?'':`style="cursor:pointer" title="تغيير الرمز" onclick="pickAvatar(${s.id})"`}>${esc(s.avatar)}</div>
-     <div><span class="nm">${esc(s.name)}${isStar(s)?' 🌟':''}<span class="lv">${lvl(s.score)}</span>${streak(s)>=2?`<span class="lv" style="background:rgba(244,63,94,.25);color:#fda4af">🔥 ${streak(s)}</span>`:''}${todayChip(s)}</span>${i<3&&rk?`<span class="bd">${badges[i]}</span>`:''}${vm?`<span class="bd" style="color:#94a3b8;margin-right:${i<3&&rk?'8px':'0'}">الإجمالي ${s.score}</span>`:''}</div></div>
+     <div><span class="nm">${esc(s.name)}${isStar(s)?' 🌟':''}<span class="lv">${lvl(s.score)}</span>${streak(s)>=2?`<span class="lv" style="background:rgba(244,63,94,.25);color:#fda4af">🔥 ${streak(s)}</span>`:''}${todayChip(s)}${nbd(s)}</span>${i<3&&rk?`<span class="bd">${badges[i]}</span>`:''}${vm?`<span class="bd" style="color:#94a3b8;margin-right:${i<3&&rk?'8px':'0'}">${view()==='week'?'الشهر '+mp(s,ck)+' · ':''}الإجمالي ${s.score}</span>`:''}${nextLine(s)}</div></div>
     <div class="r"><span class="sc">${rv(s)}</span>${selMode?'':`
      <button class="btn q add" onclick="quick(${s.id},1)">+1</button>
      <button class="btn q sub" onclick="quick(${s.id},-1)">-1</button>
@@ -388,6 +408,7 @@ function log(s,p,reason,extra){
   const n=new Date();
   s.history.unshift({ts:Date.now(),...extra,points:p,reason,time:n.toLocaleDateString('ar-SA',{month:'numeric',day:'numeric'})+' '+n.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})});
   if(p&&!(extra&&extra.spent))addMonth(s,p,(extra&&extra.ts)||Date.now());
+  if(p>0&&!(extra&&extra.spent))addCats(s,catize(reason,p),(extra&&extra.ts)||Date.now());
   if(s.history.length>300)s.history.length=300;
 }
 function change(s,p,reason,quiet,extra){
@@ -467,7 +488,7 @@ function applyPending(){
 }
 function openHist(id){
   sel=id;const s=find(id);if(!s)return;
-  document.getElementById('hTitle').textContent=`📜 سجل ${s.name} (${s.score} نقطة)`;
+  document.getElementById('hTitle').textContent=`📜 سجل ${s.name} (${s.score} نقطة)`;renderBadgesBox(s);
   document.getElementById('hList').innerHTML=s.history.length?s.history.map(h=>{
     const c=h.spent?'':h.points>=0?'pos':'neg';
     return `<div class="he ${c}"><div><div class="hr">${esc(h.reason)}</div><div class="ht">🕒 ${esc(h.time)}</div></div><div class="hp">${h.spent?'🛍️ -'+h.spent:(h.points>=0?'+':'')+h.points}</div></div>`;
@@ -493,7 +514,7 @@ function addStudent(){
 }
 function resetScores(){
   const nm=cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد';
-  if(confirm(`تصفير نقاط وسجلات ${nm} فقط؟ (الدوري الآخر لن يتأثر)`)){snap('تصفير الدوري');S().forEach(s=>{s.score=0;s.history=[];s.m={}});render()}
+  if(confirm(`تصفير نقاط وسجلات ${nm} فقط؟ (الدوري الآخر لن يتأثر)`)){snap('تصفير الدوري');S().forEach(s=>{s.score=0;s.history=[];s.m={};s.mc={}});render()}
 }
 function exportData(){
   const b=new Blob([JSON.stringify({version:4,local:data.local,remote:data.remote,meta},null,2)],{type:'application/json'});
@@ -717,6 +738,8 @@ let grp=[],selMode=false,avSel=null;const selSet=new Set();
 function toggleMute(){meta.cfg.mute=!meta.cfg.mute;updMute();save();toast(meta.cfg.mute?'🔇 تم كتم الصوت':'🔊 تم تشغيل الصوت')}
 function updMute(){const b=document.getElementById('muteBtn');if(b)b.textContent=meta.cfg.mute?'🔇 الصوت مكتوم':'🔊 الصوت'}
 /* ---- عرض الشهر / الإجمالي ---- */
+/* قيمة الترتيب حسب العرض: الشهر أو الأسبوع (من الأحد) أو الإجمالي */
+function rvOf(){const v=view(),ck=curKey(),ws=weekStart(),now=Date.now()+1;return v==='month'?s=>mp(s,ck):v==='week'?s=>wk(s,ws,now):s=>s.score}
 function setView(v){meta.cfg.view=v;render()}
 /* ---- تحديد عدة طلاب ---- */
 function toggleSelMode(){selMode=!selMode;selSet.clear();render()}
@@ -750,19 +773,39 @@ function setAvatar(i){
   closePov();render();
 }
 /* ---- جائزة الشهر ---- */
-function renderPrize(){
-  const el=document.getElementById('prize'),ks=pastKeys().filter(k=>!mdone()[k]&&topOf(k).length);
-  if(!ks.length){el.className='';el.innerHTML='';el.style.borderColor='';return}
-  const k=ks[0],w=winners(topOf(k)),mpz=meta.cfg&&meta.cfg.mprize;
-  el.className='goal';el.style.borderColor='var(--gold)';
-  el.innerHTML=`<div class="gtop"><span>🏆 فائز ${esc(mlab(k))}${w.length>1?' (تعادل)':''}</span><span style="color:#94a3b8;font-weight:400;font-size:.85rem">${mpz?'الجائزة: '+esc(mpz):''}</span></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${w.map((x,i)=>`<button class="btn add" title="شهادة" onclick="certMonth('${k}',${i})">📜 ${esc(x.a||'')} ${esc(x.n)} · ${x.p} نقطة</button>`).join('')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" style="background:var(--pri)" onclick="doneMonth('${k}')">✅ تم تسليم الجائزة</button><button class="btn" onclick="openHall()">🏅 لوحة الشرف</button></div>${ks.length>1?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${ks.length-1} شهور سابقة لم تُسجَّل كمُسلَّمة (في لوحة الشرف)</div>`:''}`;
+const CATS=[
+ {id:'att',ic:'🔥',n:'الأكثر التزاماً',u:'حلقة'},
+ {id:'ext',ic:'🚀',n:'الأكثر زيادة في التسميع',u:'سطراً'},
+ {id:'tj',ic:'💎',n:'أفضل تجويد',u:'مرة'},
+ {id:'hp',ic:'🤝',n:'الأكثر مساعدة لزملائه',u:'مرة'}
+];
+function catVal(s,id,k){
+  if(id==='att')return (s.att||[]).filter(d=>mkeyC(new Date(d+'T12:00:00'),k[0])===k).length;
+  return ((s.mc||{})[k]||{})[id]||0;
 }
-function doneMonth(k){snap('تسليم جائزة '+mlab(k));mdone()[k]={t:Date.now(),top:topOf(k)};render();toast('✅ سُجّل تسليم جائزة '+mlab(k))}
+function catBoard(id,k){
+  const a=S().map(s=>({n:s.name,a:s.avatar,v:catVal(s,id,k)})).filter(x=>x.v>0).sort((x,y)=>y.v-x.v);
+  return a.length?a.filter(x=>x.v===a[0].v):[];
+}
+function catsOf(k){const d=mdone()[k];if(d&&d.cats)return d.cats;const o={};CATS.forEach(c=>o[c.id]=catBoard(c.id,k));return o}
+function catLines(k,clickable){
+  const cs=catsOf(k);
+  return CATS.map(c=>{const w=cs[c.id]||[];if(!w.length)return '';
+    return `<div style="margin:5px 0;font-size:.92rem">${c.ic} <b>${c.n}:</b> ${w.slice(0,4).map((x,i)=>clickable?`<button class="btn" style="padding:4px 8px" onclick="certCat('${k}','${c.id}',${i})">${esc(x.n)} (${x.v})</button>`:`${esc(x.n)} (${x.v})`).join(clickable?' ':'، ')}${w.length>4?` +${w.length-4}`:''}</div>`}).join('');
+}
+function renderPrize(){
+  const el=document.getElementById('prize'),ks=pastKeys().filter(k=>!mdone()[k]&&(topOf(k).length||CATS.some(c=>catsOf(k)[c.id].length)));
+  if(!ks.length){el.className='';el.innerHTML='';el.style.borderColor='';return}
+  const k=ks[0],w=winners(topOf(k)),mpz=meta.cfg&&meta.cfg.mprize,cpz=meta.cfg&&meta.cfg.cprize,cl=catLines(k,true);
+  el.className='goal';el.style.borderColor='var(--gold)';
+  el.innerHTML=`<div class="gtop"><span>🏆 فائز ${esc(mlab(k))}${w.length>1?' (تعادل)':''}</span><span style="color:#94a3b8;font-weight:400;font-size:.85rem">${mpz?'الجائزة: '+esc(mpz):''}</span></div>${w.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${w.map((x,i)=>`<button class="btn add" title="شهادة" onclick="certMonth('${k}',${i})">📜 ${esc(x.a||'')} ${esc(x.n)} · ${x.p} نقطة</button>`).join('')}</div>`:''}${cl?`<div class="st" style="color:#fcd34d">🎖️ الجوائز التخصصية${cpz?' · '+esc(cpz):''} <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(اضغط الاسم لشهادته)</span></div>${cl}`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" style="background:var(--pri)" onclick="doneMonth('${k}')">✅ تم تسليم الجوائز</button><button class="btn" onclick="openHall()">🏅 لوحة الشرف</button></div>${ks.length>1?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${ks.length-1} شهور سابقة لم تُسجَّل كمُسلَّمة (في لوحة الشرف)</div>`:''}`;
+}
+function doneMonth(k){snap('تسليم جوائز '+mlab(k));mdone()[k]={t:Date.now(),top:topOf(k),cats:catsOf(k)};render();toast('✅ سُجّل تسليم جوائز '+mlab(k))}
 function openHall(){
   const ck=curKey(),now3=monthBoard(ck).slice(0,3);
   const meds=['🥇','🥈','🥉'];
-  const row=(k,top,done)=>`<div class="he" style="display:block;border-right-color:${done?'var(--em)':'var(--gold)'}"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(mlab(k))}</b><span style="color:${done?'#6ee7b7':'#fcd34d'}">${done?'✅ سُلّمت الجائزة':'⏳ لم تُسلَّم'}</span></div><div style="margin-top:6px;color:#e2e8f0">${top.map((x,i)=>`${meds[i]} ${esc(x.n)} <b>${x.p}</b>`).join(' · ')||'—'}</div>${done?'':`<button class="btn" style="margin-top:8px" onclick="doneMonth('${k}');openHall()">✅ تم تسليم الجائزة</button>`}</div>`;
-  const cr=`<div class="he" style="display:block;border-right-color:var(--cy)"><div style="display:flex;justify-content:space-between"><b>${esc(labelOf(new Date(),calOf()))}</b><span style="color:#67e8f9">الشهر الجاري</span></div><div style="margin-top:6px;color:#e2e8f0">${now3.map((x,i)=>`${meds[i]} ${esc(x.n)} <b>${x.p}</b>`).join(' · ')||'— لا نقاط بعد'}</div></div>`;
+  const row=(k,top,done)=>`<div class="he" style="display:block;border-right-color:${done?'var(--em)':'var(--gold)'}"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(mlab(k))}</b><span style="color:${done?'#6ee7b7':'#fcd34d'}">${done?'✅ سُلّمت الجوائز':'⏳ لم تُسلَّم'}</span></div><div style="margin-top:6px;color:#e2e8f0">${top.map((x,i)=>`${meds[i]} ${esc(x.n)} <b>${x.p}</b>`).join(' · ')||'—'}</div>${catLines(k,false)}${done?'':`<button class="btn" style="margin-top:8px" onclick="doneMonth('${k}');openHall()">✅ تم تسليم الجوائز</button>`}</div>`;
+  const cr=`<div class="he" style="display:block;border-right-color:var(--cy)"><div style="display:flex;justify-content:space-between"><b>${esc(labelOf(new Date(),calOf()))}</b><span style="color:#67e8f9">الشهر الجاري</span></div><div style="margin-top:6px;color:#e2e8f0">${now3.map((x,i)=>`${meds[i]} ${esc(x.n)} <b>${x.p}</b>`).join(' · ')||'— لا نقاط بعد'}</div>${catLines(ck,false)}</div>`;
   const past=pastKeys().map(k=>row(k,topOf(k),!!mdone()[k])).join('');
   document.getElementById('fList').innerHTML=cr+(past||'<div class="empty">ستظهر هنا الشهور السابقة وفائزوها.</div>');
   document.getElementById('fov').style.display='flex';
@@ -778,16 +821,16 @@ function closeDisp(){
   try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
 }
 function renderDisp(){
-  const vm=view()==='month',ck=curKey(),rv=s=>vm?mp(s,ck):s.score;
+  const vm=view()!=='all',rv=rvOf();
   const top=[...S()].sort((a,b)=>rv(b)-rv(a)||b.score-a.score).slice(0,3);
   document.getElementById('dTitle').textContent='🏆 '+HN();
-  document.getElementById('dSub').textContent=vm?'ترتيب '+labelOf(new Date(),calOf()):'الترتيب العام';
+  document.getElementById('dSub').textContent=view()==='week'?'ترتيب هذا الأسبوع':vm?'ترتيب '+labelOf(new Date(),calOf()):'الترتيب العام';
   [1,2,3].forEach(i=>{const s=top[i-1],ok=s&&(!vm||rv(s)>0);
     document.getElementById('da'+i).textContent=ok?s.avatar:'';
     document.getElementById('dn'+i).textContent=ok?s.name:'-';
     document.getElementById('dp'+i).textContent=ok?rv(s)+' نقطة':''});
   const mpz=meta.cfg&&meta.cfg.mprize;
-  document.getElementById('dPrize').textContent=vm&&mpz?'🎁 جائزة أفضل طالب هذا الشهر: '+mpz:'';
+  document.getElementById('dPrize').textContent=view()==='month'&&mpz?'🎁 جائزة أفضل طالب هذا الشهر: '+mpz:'';
 }
 /* ---- بطاقة الإنجاز والشهادة ---- */
 function mkCv(W,H){
@@ -820,30 +863,32 @@ const LRM='\u200E';
 async function studentCard(){
   const s=find(sel);if(!s)return;
   await fontsReady();
-  const W=1080,H=1460,ck=curKey(),ws=weekStart(),now=Date.now()+1,{c,x,T,R,fit}=mkCv(W,H);
+  const W=1080,H=1540,ck=curKey(),ws=weekStart(),now=Date.now()+1,{c,x,T,R,fit}=mkCv(W,H);
   const order=[...S()].sort((a,b)=>mp(b,ck)-mp(a,ck)||b.score-a.score),mpv=mp(s,ck),rk=mpv>0?order.findIndex(z=>z.id===s.id)+1:0;
   const ach=[];s.history.forEach(h=>{if(h.ts>=ws&&h.points>0&&!h.spent){const r=String(h.reason).replace(/ ×\d+$/,'');if(!ach.includes(r))ach.push(r)}});
-  const wtop=S().map(z=>[z,wk(z,ws,now)]).sort((a,b)=>b[1]-a[1])[0];
+  const wtop=S().map(z=>[z,wk(z,ws,now)]).sort((a,b)=>b[1]-a[1])[0],nx=nextLv(s.score),earned=BADGES.filter(b=>(s.bd||{})[b.id]);
   R(24,24,W-48,H-48,40,null,'#f59e0b');
   T(HN(),W/2,100,'#10b981',700,34,'center');
   T('🏆 بطاقة إنجاز',W/2,190,'#fcd34d',900,84,'center');
   x.beginPath();x.arc(W/2,375,115,0,7);x.fillStyle='rgba(255,255,255,.08)';x.fill();
   T(s.avatar,W/2,380,'#fff',700,130,'center');
   T(s.name,W/2,540,'#fff',900,fit(s.name,900,72,W-200,40),'center');
-  T(lvl(s.score),W/2,610,'#c7d2fe',600,36,'center');
+  T(lvl(s.score),W/2,605,'#c7d2fe',600,36,'center');
+  if(nx)T('⬆️ باقي '+nx.need+' نقطة على '+nx.name,W/2,648,'#94a3b8',600,26,'center');
   const bd=[isStar(s)?'🌟 طالب اليوم':'',wtop&&wtop[1]>0&&wtop[0].id===s.id?'🏅 بطل الأسبوع':'',streak(s)>=2?'🔥 التزام '+streak(s):''].filter(Boolean);
-  if(bd.length)T(bd.join('   ·   '),W/2,670,'#fcd34d',700,32,'center');
+  if(bd.length)T(bd.join('   ·   '),W/2,692,'#fcd34d',700,32,'center');
+  if(earned.length)T(earned.slice(0,10).map(b=>b.ic).join('  '),W/2,745,'#fff',700,46,'center');
   const box=(bx,by,lab,val)=>{R(bx,by,460,150,28,'rgba(255,255,255,.07)','rgba(245,158,11,.5)');T(lab,bx+230,by+38,'#94a3b8',600,27,'center');T(String(val),bx+230,by+98,'#fcd34d',900,60,'center')};
-  box(560,720,'نقاط '+labelOf(new Date(),calOf()),mpv);
-  box(60,720,'الترتيب في الشهر',rk?rk+' من '+S().length:'-');
-  box(560,890,'نقاط هذا الأسبوع',LRM+'+'+wk(s,ws,now));
-  box(60,890,'مجموع النقاط',s.score);
-  T('✨ أبرز إنجازات الأسبوع',W-80,1090,'#94a3b8',700,32);
+  box(560,800,'نقاط '+labelOf(new Date(),calOf()),mpv);
+  box(60,800,'الترتيب في الشهر',rk?rk+' من '+S().length:'-');
+  box(560,970,'نقاط هذا الأسبوع',LRM+'+'+wk(s,ws,now));
+  box(60,970,'مجموع النقاط',s.score);
+  T('✨ أبرز إنجازات الأسبوع',W-80,1170,'#94a3b8',700,32);
   const lines=ach.slice(0,4);
-  if(lines.length)lines.forEach((r,i)=>T('• '+(r.length>40?r.slice(0,39)+'…':r),W-80,1145+i*55,'#fff',600,32));
-  else T('واصل التميز يا بطل 💪',W-80,1145,'#fff',600,32);
-  T(QUOTES[Math.floor(Math.random()*QUOTES.length)],W/2,1365,'#fcd34d',600,30,'center');
-  T('المعلم: '+TN(),W/2,1415,'#e2e8f0',700,34,'center');
+  if(lines.length)lines.forEach((r,i)=>T('• '+(r.length>40?r.slice(0,39)+'…':r),W-80,1225+i*55,'#fff',600,32));
+  else T('واصل التميز يا بطل 💪',W-80,1225,'#fff',600,32);
+  T(QUOTES[Math.floor(Math.random()*QUOTES.length)],W/2,1450,'#fcd34d',600,30,'center');
+  T('المعلم: '+TN(),W/2,1498,'#e2e8f0',700,34,'center');
   showImg(c,'🖼️ بطاقة إنجاز','بطاقة-'+s.name+'.png');
 }
 async function makeCert(o){
@@ -873,6 +918,81 @@ function certMonth(k,i){
   const mpz=meta.cfg&&meta.cfg.mprize;
   makeCert({name:w.n,avatar:w.a,line:'لحصوله على المركز الأول في '+mlab(k)+(mpz?' ونيله جائزة: '+mpz:'')});
 }
+/* ---- الشارات والمستويات والتهنئة ---- */
+const BADGES=[
+ {id:'ext15',ic:'📄',n:'وجه من الزيادة',d:'15 سطراً زيادة في التسميع',k:'ext',v:15},
+ {id:'ext50',ic:'🚀',n:'منطلق',d:'50 سطراً زيادة',k:'ext',v:50},
+ {id:'ext150',ic:'🏔️',n:'قمة الهمة',d:'150 سطراً زيادة',k:'ext',v:150},
+ {id:'rec10',ic:'📖',n:'منتظم',d:'10 تسميعات للمقرر',k:'rec',v:10},
+ {id:'rec30',ic:'📚',n:'مثابر',d:'30 تسميعاً للمقرر',k:'rec',v:30},
+ {id:'cl5',ic:'🎯',n:'متقن',d:'تسميع بلا أخطاء 5 مرات',k:'clean',v:5},
+ {id:'cl20',ic:'🏹',n:'دقيق الإصابة',d:'بلا أخطاء 20 مرة',k:'clean',v:20},
+ {id:'tj5',ic:'💎',n:'صاحب الترتيل',d:'إتقان التجويد 5 مرات',k:'tj',v:5},
+ {id:'hp3',ic:'🤝',n:'مساعد الحلقة',d:'مساعدة زملائه 3 مرات',k:'hp',v:3},
+ {id:'rv10',ic:'🔁',n:'مراجع حريص',d:'10 مراجعات',k:'rv',v:10},
+ {id:'st7',ic:'🔥',n:'ملتزم',d:'7 حلقات متتالية',k:'streak',v:7},
+ {id:'st15',ic:'⚡',n:'لا يغيب',d:'15 حلقة متتالية',k:'streak',v:15}
+];
+const bval=(s,k)=>k==='streak'?streak(s):((s.c||{})[k]||0);
+const lvIdx=p=>LEVELS.reduce((a,l,i)=>p>=l[0]?i:a,0);
+function nextLv(p){
+  const i=LEVELS.findIndex(l=>l[0]>p);if(i<0)return null;
+  const from=i>0?LEVELS[i-1][0]:0,to=LEVELS[i][0];
+  return {name:LEVELS[i][1],need:to-p,pct:Math.max(0,Math.min(100,Math.round((p-from)/(to-from)*100)))};
+}
+const nbd=s=>{const n=Object.keys(s.bd||{}).length;return n?`<span class="lv" style="background:rgba(245,158,11,.22);color:#fde68a">🏅 ${n}</span>`:''};
+function nextLine(s){
+  const nx=nextLv(s.score);
+  return nx?`<span class="bd" style="display:block;color:#94a3b8;margin-top:2px">⬆️ باقي ${nx.need} على ${esc(nx.name)}</span><div style="height:5px;background:#0f172a;border-radius:4px;margin-top:3px;max-width:220px"><div style="height:100%;width:${nx.pct}%;background:linear-gradient(90deg,var(--em),#38bdf8);border-radius:4px"></div></div>`:`<span class="bd" style="display:block;color:#fcd34d">👑 وصل لأعلى مستوى</span>`;
+}
+function addCong(s,kind,txt,msg){
+  const a=(meta[cur].cg=meta[cur].cg||[]);
+  a.unshift({id:s.id,n:s.name,k:kind,t:txt,m:msg,ts:Date.now()});if(a.length>40)a.length=40;
+}
+/* يُستدعى مع كل رسم: يمنح الشارات ويرصد الترقيات (أول مرة تُمنح بصمت لما سبق) */
+function checkGrowth(){
+  const newB=[];
+  meta[cur].cg=(meta[cur].cg||[]).filter(e=>Date.now()-e.ts<12096e5);
+  S().forEach(s=>{
+    s.bd=s.bd||{};
+    const idx=lvIdx(s.score),silent=s.lvMax===undefined;
+    if(silent)s.lvMax=idx;
+    else if(idx>s.lvMax){s.lvMax=idx;addCong(s,'lv','ارتقى إلى '+LEVELS[idx][1],`بشرى سارة 🎉 ارتقى ابنكم إلى مستوى: ${LEVELS[idx][1]}\n⭐ مجموع نقاطه: ${s.score}`)}
+    BADGES.forEach(b=>{
+      if(s.bd[b.id]||bval(s,b.k)<b.v)return;
+      s.bd[b.id]=Date.now();
+      if(!silent){newB.push([s,b]);addCong(s,'bd','نال شارة '+b.ic+' '+b.n,`بشرى سارة 🎉 نال ابنكم شارة «${b.ic} ${b.n}» (${b.d})`)}
+    });
+  });
+  if(newB.length)setTimeout(()=>toast(newB.length===1?`🏅 ${newB[0][0].name} نال شارة ${newB[0][1].ic} ${newB[0][1].n}`:`🏅 ${newB.length} شارات جديدة نالها الطلاب`,true),1800);
+}
+function renderBadgesBox(s){
+  const el=document.getElementById('hBadges'),bd=s.bd||{},nx=nextLv(s.score);
+  const earned=BADGES.filter(b=>bd[b.id]),lock=BADGES.filter(b=>!bd[b.id]);
+  el.innerHTML=`<div class="st" style="color:#fcd34d">🏅 الشارات (${earned.length} من ${BADGES.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${earned.map(b=>`<span class="lv" style="background:rgba(245,158,11,.22);color:#fde68a;font-size:.8rem;margin:0" title="${esc(b.d)}">${b.ic} ${esc(b.n)}</span>`).join('')}${lock.map(b=>`<span class="lv" style="opacity:.55;font-size:.75rem;margin:0" title="${esc(b.d)}">🔒 ${esc(b.n)} <bdi dir="ltr">${Math.min(bval(s,b.k),b.v)}/${b.v}</bdi></span>`).join('')}</div>${nx?`<div style="color:#94a3b8;font-size:.85rem;margin-top:8px">⬆️ باقي ${nx.need} نقطة على ${esc(nx.name)}</div>`:''}<div class="st" style="margin-top:12px">📜 الحركات</div>`;
+}
+function renderCong(){
+  const el=document.getElementById('cong'),a=meta[cur].cg||[];
+  if(!a.length){el.className='';el.innerHTML='';return}
+  el.className='goal';
+  el.innerHTML=`<div class="gtop"><span>📲 تهنئات جاهزة لأولياء الأمور (${a.length})</span><button class="btn" onclick="clearCong()">تجاهل الكل</button></div>`+a.slice(0,5).map((e,i)=>`<div class="he" style="margin-top:8px;gap:8px;flex-wrap:wrap"><div><div class="hr">${esc(e.n)}</div><div class="ht">${esc(e.t)}</div></div><div style="display:flex;gap:6px"><button class="btn add" onclick="sendCong(${i})">📲 إرسال</button><button class="btn" onclick="dismissCong(${i})">✕</button></div></div>`).join('')+(a.length>5?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${a.length-5} أخرى</div>`:'');
+}
+function dismissCong(i){(meta[cur].cg||[]).splice(i,1);render()}
+function clearCong(){meta[cur].cg=[];render()}
+function sendCong(i){
+  const e=(meta[cur].cg||[])[i];if(!e)return;
+  const s=find(e.id);if(!s){dismissCong(i);return}
+  if(!s.phone){const p=prompt('رقم جوال ولي الأمر (مثال 05xxxxxxxx):','');if(p===null)return;s.phone=p.trim()}
+  const msg=`السلام عليكم ورحمة الله، ولي أمر الطالب ${s.name}\n📖 ${HN()}\n${e.m}\n\nبارك الله فيه وجزاكم خيراً على متابعتكم.\nالمعلم: ${TN()}`;
+  let ph=(s.phone||'').replace(/\D/g,'');if(ph.startsWith('05'))ph='966'+ph.slice(1);
+  window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`,'_blank');
+  meta[cur].cg.splice(i,1);render();
+}
+function certCat(k,id,i){
+  const c=CATS.find(x=>x.id===id),w=(catsOf(k)[id]||[])[i];if(!c||!w)return;
+  const cpz=meta.cfg&&meta.cfg.cprize;
+  makeCert({name:w.n,avatar:w.a,line:'لتميّزه في «'+c.n+'» خلال '+mlab(k)+(cpz?' ونيله جائزة: '+cpz:'')});
+}
 /* ---- حزم الإعدادات ---- */
 function bunSec(){
   const items=draft.pos.map((p,j)=>[p,j]).filter(x=>String(x[0][1]).trim());
@@ -885,7 +1005,7 @@ function renameItem(i,v){const old=draft.pos[i][1];draft.bun.forEach(b=>{const x
 let draft=null;
 function openSet(){
   draft={pos:LEAGUES[cur].pos.map(a=>[...a]),neg:LEAGUES[cur].neg.map(a=>[...a]),shop:SHOP.map(a=>[...a]),bun:(LEAGUES[cur].bun||[]).map(b=>({n:b.n,k:[...b.k]}))};
-  document.getElementById('setH').value=meta.cfg.halaqa||'';document.getElementById('setT').value=meta.cfg.teacher||'';document.getElementById('setC').value=meta.cfg.closeDay!=null?meta.cfg.closeDay:4;document.getElementById('setCal').value=calOf();document.getElementById('setMP').value=meta.cfg.mprize||'';
+  document.getElementById('setH').value=meta.cfg.halaqa||'';document.getElementById('setT').value=meta.cfg.teacher||'';document.getElementById('setC').value=meta.cfg.closeDay!=null?meta.cfg.closeDay:4;document.getElementById('setCal').value=calOf();document.getElementById('setMP').value=meta.cfg.mprize||'';document.getElementById('setCP').value=meta.cfg.cprize||'';
   drawSet();document.getElementById('sov').style.display='flex';
 }
 function closeSet(){document.getElementById('sov').style.display='none'}
@@ -897,7 +1017,7 @@ function drawSet(){
 function addRow(k){draft[k].push([k==='neg'?-1:k==='shop'?10:1,'']);drawSet()}
 function delRow(k,i){draft[k].splice(i,1);drawSet()}
 function saveSet(){
-  meta.cfg=Object.assign(meta.cfg||{},{halaqa:document.getElementById('setH').value.trim(),teacher:document.getElementById('setT').value.trim(),closeDay:+document.getElementById('setC').value,cal:document.getElementById('setCal').value,mprize:document.getElementById('setMP').value.trim()});
+  meta.cfg=Object.assign(meta.cfg||{},{halaqa:document.getElementById('setH').value.trim(),teacher:document.getElementById('setT').value.trim(),closeDay:+document.getElementById('setC').value,cal:document.getElementById('setCal').value,mprize:document.getElementById('setMP').value.trim(),cprize:document.getElementById('setCP').value.trim()});
   const ok=a=>a.filter(r=>String(r[1]).trim()&&r[0]);
   LEAGUES[cur].pos=ok(draft.pos);LEAGUES[cur].neg=ok(draft.neg);
   LEAGUES[cur].bun=draft.bun.filter(b=>String(b.n).trim()).map(b=>({n:b.n.trim(),k:b.k.filter(l=>LEAGUES[cur].pos.some(p=>p[1]===l))}));
