@@ -284,6 +284,7 @@ const TIERN=['🥉 تشجيعية','🥈 جيدة','🥇 مميزة','💎 كب�
 const tiersOf=()=>{const t=meta.cfg&&meta.cfg.tiers;return Array.isArray(t)&&t.length===4?t:[50,120,200,340]};
 const tierIdx=p=>tiersOf().reduce((a,m,i)=>p>=m?i:a,-1);
 const LEVELS=[[0,'🌱 برعم النور'],[10,'🌿 غصن مثمر'],[25,'🌸 زهرة الحلقة'],[50,'🌙 بدر الحلقة'],[90,'⭐ نجم الحلقة'],[150,'🌟 نجم متألق'],[250,'👑 تاج الحلقة'],[400,'💎 جوهرة الحلقة']];
+const LEVELS0=LEVELS.map(a=>[...a]);
 const lvl=p=>([...LEVELS].reverse().find(l=>p>=l[0])||LEVELS[0])[1];
 const QUOTES=['«خيركم من تعلّم القرآن وعلّمه»','﴿وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا﴾','«اقرؤوا القرآن فإنه يأتي يوم القيامة شفيعاً لأصحابه»','«الماهر بالقرآن مع السفرة الكرام البررة»'];
 const HN=()=>(meta.cfg&&meta.cfg.halaqa)||'اسم الحلقة',TN=()=>(meta.cfg&&meta.cfg.teacher)||'اسم المعلم';
@@ -294,6 +295,8 @@ function applyMeta(){
     for(const k of ['local','remote'])if(it[k]){LEAGUES[k].pos=it[k].pos;LEAGUES[k].neg=it[k].neg;LEAGUES[k].bun=it[k].bun||[]}
     if(it.shop)SHOP.splice(0,SHOP.length,...it.shop);
   }
+  /* مستويات الطلاب (أسماء وحدود) يعدّلها المعلم من الإعدادات */
+  if(Array.isArray(meta.cfg.levels)&&meta.cfg.levels.length>=2)LEVELS.splice(0,LEVELS.length,...meta.cfg.levels.map(a=>[+a[0]||0,String(a[1])]));
   /* ترحيل المتجر للنظام الجديد (مرة واحدة): جوائز المستويات الافتراضية إن لم تكن هناك جوائز مخصصة */
   if(meta.cfg.shopV!==3){
     if(!it||!it.shop||!it.shop.length||JSON.stringify(it.shop)===JSON.stringify(SHOP2))SHOP.splice(0,SHOP.length,...SHOP3.map(a=>[...a]));
@@ -1132,7 +1135,7 @@ function togBun(i,j){const l=draft.pos[j][1],b=draft.bun[i],x=b.k.indexOf(l);x>=
 function renameItem(i,v){const old=draft.pos[i][1];draft.bun.forEach(b=>{const x=b.k.indexOf(old);if(x>=0)b.k[x]=v});draft.pos[i][1]=v}
 let draft=null;
 function openSet(){
-  draft={pos:LEAGUES[cur].pos.map(a=>[...a]),neg:LEAGUES[cur].neg.map(a=>[...a]),shop:SHOP.map(a=>[...a]),tiers:[...tiersOf()],goals:goalsOf(meta[cur]).map(g=>[g.t,g.p]),bun:(LEAGUES[cur].bun||[]).map(b=>({n:b.n,k:[...b.k]}))};
+  draft={pos:LEAGUES[cur].pos.map(a=>[...a]),neg:LEAGUES[cur].neg.map(a=>[...a]),lv:LEVELS.map(a=>[...a]),shop:SHOP.map(a=>[...a]),tiers:[...tiersOf()],goals:goalsOf(meta[cur]).map(g=>[g.t,g.p]),bun:(LEAGUES[cur].bun||[]).map(b=>({n:b.n,k:[...b.k]}))};
   document.getElementById('setH').value=meta.cfg.halaqa||'';document.getElementById('setT').value=meta.cfg.teacher||'';document.getElementById('setC').value=meta.cfg.closeDay!=null?meta.cfg.closeDay:4;document.getElementById('setCal').value=calOf();document.getElementById('setMP').value=meta.cfg.mprize||'';document.getElementById('setCP').value=meta.cfg.cprize||'';
   drawSet();document.getElementById('sov').style.display='flex';
 }
@@ -1140,9 +1143,19 @@ function closeSet(){document.getElementById('sov').style.display='none'}
 function drawSet(){
   const row=(k,i,a)=>`<div class="custom" style="margin-top:6px"><input style="flex:1;min-width:0" placeholder="اكتب البند" value="${esc(a[1])}" oninput="${k==='pos'?`renameItem(${i},this.value)`:`draft.${k}[${i}][1]=this.value`}"><input type="number" min="1" style="width:72px" value="${Math.abs(a[0])}" oninput="draft.${k}[${i}][0]=${k==='neg'?'-':''}Math.abs(+this.value)"><button class="btn danger" onclick="delRow('${k}',${i})">🗑</button></div>`;
   const sec=(k,t,c)=>`<div class="st" style="color:${c}">${t}</div>`+draft[k].map((a,i)=>row(k,i,a)).join('')+`<button class="btn" style="margin-top:8px" onclick="addRow('${k}')">➕ إضافة بند</button>`;
-  document.getElementById('setLists').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin-top:12px">البنود التالية خاصة بـ <b>${cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد'}</b>، وللتعديل على الأخرى انتقل لتبويبها ثم افتح الإعدادات.</p>`+sec('pos','✨ بنود الإضافة (الرقم = عدد النقاط)','var(--em)')+sec('neg','⚠️ بنود الخصم (الرقم = النقاط المخصومة)','var(--rose)')+`<p style="color:#94a3b8;font-size:.85rem;margin-top:14px">🛍️ <b>المتجر يعمل على الحلقة الحضورية</b>: كل طالب يختار جائزة واحدة آخر الشهر، والرقم هو الحد الأدنى من نقاط الشهر لنيلها.</p>`+sec('shop','🛍️ جوائز المتجر (الرقم = النقاط المطلوبة)','#fcd34d')+`<div class="st" style="color:#fcd34d">🏷️ حدود مستويات المتجر (أقل نقاط للمستوى)</div><div class="custom" style="gap:6px">${TIERN.map((n,i)=>`<label style="flex:1;min-width:70px;font-size:.78rem;color:#cbd5e1">${n}<input type="number" min="1" style="width:100%" value="${draft.tiers[i]}" oninput="draft.tiers[${i}]=Math.abs(+this.value)||1"></label>`).join('')}</div>`+sec('goals','🎯 أهداف الحلقة الجماعية (الرقم = إجمالي نقاط الحلقة، ويُنال الهدف عند بلوغه)','#67e8f9')+bunSec();
+  document.getElementById('setLists').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin-top:12px">البنود التالية خاصة بـ <b>${cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد'}</b>، وللتعديل على الأخرى انتقل لتبويبها ثم افتح الإعدادات.</p>`+sec('lv','🌱 مستويات الطلاب (الرقم = مجموع النقاط للوصول إلى المستوى؛ الأول يبدأ من 0)','#a7f3d0')+`<div class="st" style="color:#a7f3d0">قوالب جاهزة (تغيّر الأسماء فقط، وتعدّلها بعد ذلك كما تشاء):</div><div style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(LVPRESETS).map(k=>`<button class="btn" onclick="lvPreset('${k}')">${LVPRESETS[k].t}</button>`).join('')}</div>`+sec('pos','✨ بنود الإضافة (الرقم = عدد النقاط)','var(--em)')+sec('neg','⚠️ بنود الخصم (الرقم = النقاط المخصومة)','var(--rose)')+`<p style="color:#94a3b8;font-size:.85rem;margin-top:14px">🛍️ <b>المتجر يعمل على الحلقة الحضورية</b>: كل طالب يختار جائزة واحدة آخر الشهر، والرقم هو الحد الأدنى من نقاط الشهر لنيلها.</p>`+sec('shop','🛍️ جوائز المتجر (الرقم = النقاط المطلوبة)','#fcd34d')+`<div class="st" style="color:#fcd34d">🏷️ حدود مستويات المتجر (أقل نقاط للمستوى)</div><div class="custom" style="gap:6px">${TIERN.map((n,i)=>`<label style="flex:1;min-width:70px;font-size:.78rem;color:#cbd5e1">${n}<input type="number" min="1" style="width:100%" value="${draft.tiers[i]}" oninput="draft.tiers[${i}]=Math.abs(+this.value)||1"></label>`).join('')}</div>`+sec('goals','🎯 أهداف الحلقة الجماعية (الرقم = إجمالي نقاط الحلقة، ويُنال الهدف عند بلوغه)','#67e8f9')+bunSec();
 }
-function addRow(k){draft[k].push([k==='neg'?-1:k==='shop'?100:k==='goals'?1000:1,'']);drawSet()}
+/* قوالب أسماء المستويات (8 مستويات بحدود النقاط الحالية) */
+const LVPRESETS={
+ plants:{t:'🌱 نباتات (الحالي)',n:['🌱 برعم النور','🌿 غصن مثمر','🌸 زهرة الحلقة','🌙 بدر الحلقة','⭐ نجم الحلقة','🌟 نجم متألق','👑 تاج الحلقة','💎 جوهرة الحلقة']},
+ mastery:{t:'📖 مراتب الإتقان',n:['📖 قارئ','🔰 مجتهد','🌿 راسخ','🏅 ماهر','⭐ نجم الحلقة','🌟 نجم متألق','👑 تاج الحلقة','💎 جوهرة الحلقة']},
+ football:{t:'⚽ كرة القدم',n:['⚽ ناشئ','👟 لاعب','🎽 لاعب أساسي','🏃 هدّاف','⭐ نجم الفريق','🌟 نجم متألق','🏆 قائد الفريق','👑 أسطورة الحلقة']}
+};
+function lvPreset(k){
+  const P=LVPRESETS[k].n,keep=draft.lv.length===P.length;
+  draft.lv=LEVELS0.map((a,i)=>[keep?draft.lv[i][0]:a[0],P[i]]);drawSet();
+}
+function addRow(k){draft[k].push([k==='neg'?-1:k==='shop'?100:k==='goals'?1000:k==='lv'?Math.max(0,...draft.lv.map(r=>+r[0]||0))+100:1,'']);drawSet()}
 function delRow(k,i){draft[k].splice(i,1);drawSet()}
 function saveSet(){
   meta.cfg=Object.assign(meta.cfg||{},{halaqa:document.getElementById('setH').value.trim(),teacher:document.getElementById('setT').value.trim(),closeDay:+document.getElementById('setC').value,cal:document.getElementById('setCal').value,mprize:document.getElementById('setMP').value.trim(),cprize:document.getElementById('setCP').value.trim()});
@@ -1155,7 +1168,11 @@ function saveSet(){
   meta.items.shop=[...SHOP];
   meta.cfg.tiers=[...draft.tiers].map(x=>+x||1).sort((a,b)=>a-b);
   meta[cur].goals=ok(draft.goals).map(a=>({t:a[0],p:String(a[1]).trim()}));
-  closeSet();render();toast('✅ تم حفظ الإعدادات');
+  let lv=draft.lv.filter(r=>String(r[1]).trim()&&Number.isFinite(+r[0])).map(r=>[Math.max(0,Math.round(+r[0])),String(r[1]).trim()]).sort((a,b)=>a[0]-b[0]);
+  lv=lv.filter((r,i)=>i===0||r[0]!==lv[i-1][0]);
+  const lvBad=lv.length<2;
+  if(!lvBad){lv[0][0]=0;LEVELS.splice(0,LEVELS.length,...lv);meta.cfg.levels=lv.map(a=>[...a]);['local','remote'].forEach(k=>data[k].forEach(x=>{x.lvMax=lvIdx(x.score)}))}
+  closeSet();render();toast(lvBad?'⚠️ حُفظت الإعدادات، لكن المستويات تحتاج مستويين على الأقل فبقيت كما كانت':'✅ تم حفظ الإعدادات');
 }
 document.getElementById('quote').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
 window.addEventListener('click',e=>{
