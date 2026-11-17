@@ -30,15 +30,15 @@ header p{color:#94a3b8}
 .tab.on{background:linear-gradient(135deg,var(--pri),#0ea5e9);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,.4)}
 .podium-section{background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:20px;margin-bottom:22px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .podium-title{text-align:center;font-weight:700;color:var(--gold);margin-bottom:15px}
-.podium-grid{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:12px;height:230px}
-.pc{border-radius:18px 18px 10px 10px;padding:12px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.podium-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr);align-items:end;gap:12px;height:230px}
+.pc{min-width:0;border-radius:18px 18px 10px 10px;padding:12px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
 .rank-1{height:100%;background:linear-gradient(180deg,rgba(245,158,11,.25),rgba(245,158,11,.08));border:2px solid var(--gold);box-shadow:0 0 25px rgba(245,158,11,.3)}
 .rank-2{height:82%;background:linear-gradient(180deg,rgba(148,163,184,.2),rgba(148,163,184,.05));border:2px solid var(--silver)}
 .rank-3{height:70%;background:linear-gradient(180deg,rgba(217,119,6,.2),rgba(217,119,6,.05));border:2px solid var(--bronze)}
 .crown{font-size:2.1rem;animation:fl 2s infinite ease-in-out}
 @keyframes fl{50%{transform:translateY(-8px)}}
 .pav{font-size:2.2rem}
-.pn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92%}
+.pn{font-weight:700;line-height:1.25;max-width:96%;overflow-wrap:anywhere;flex-shrink:0}
 .pp{font-weight:900;font-size:1.25rem;color:#38bdf8}
 .list{display:flex;flex-direction:column;gap:10px}
 .row{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -51,7 +51,7 @@ header p{color:#94a3b8}
 .sc{font-size:1.35rem;font-weight:900;min-width:48px;text-align:center;color:#fcd34d}
 .btn{background:#1e293b;border:1px solid rgba(255,255,255,.15);color:#fff;padding:6px 10px;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:4px;transition:.2s}
 .btn:hover{background:var(--pri);border-color:var(--pri)}
-.q{width:32px;height:32px;padding:0;justify-content:center}
+.q{padding:0;justify-content:center}.btn.q{width:44px;height:44px;min-height:44px;flex:0 0 44px}
 .add{background:rgba(16,185,129,.2);border-color:var(--em);color:var(--em)}.add:hover{background:var(--em);color:#000}
 .sub{background:rgba(244,63,94,.2);border-color:var(--rose);color:var(--rose)}.sub:hover{background:var(--rose);color:#fff}
 .hist{background:rgba(6,182,212,.15);border-color:var(--cy);color:var(--cy)}.hist:hover{background:var(--cy);color:#000}
@@ -59,9 +59,9 @@ header p{color:#94a3b8}
 .bar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-top:22px;padding:15px;background:var(--card);border-radius:16px;border:1px solid rgba(255,255,255,.08)}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:100;padding:15px}
 .modal{background:#131b2e;border:1px solid rgba(255,255,255,.15);width:100%;max-width:600px;border-radius:20px;padding:22px;max-height:90vh;overflow-y:auto}
-.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:10px}
-.mh h2{font-size:1.2rem;color:#38bdf8}
-.x{background:none;border:0;color:#94a3b8;font-size:1.6rem;cursor:pointer}
+.mh{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:10px}
+.mh h2{font-size:1.2rem;color:#38bdf8;min-width:0;overflow-wrap:anywhere}
+.x{background:none;border:0;color:#94a3b8;font-size:1.6rem;cursor:pointer;min-width:44px;min-height:44px;line-height:1;flex-shrink:0}
 .st{font-size:.95rem;font-weight:700;margin:12px 0 8px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
 .it{background:#1e293b;border:1px solid rgba(255,255,255,.08);color:#f1f5f9;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.88rem;cursor:pointer;text-align:right}
@@ -89,7 +89,9 @@ header p{color:#94a3b8}
 #dov .pn{font-size:1.7rem}#dov .pp{font-size:2.1rem}#dov .dav{font-size:3.2rem}#dov .pav{font-size:2.4rem}
 #dov .dp{margin-top:22px;font-size:1.3rem;color:#6ee7b7;text-align:center}
 .selbar{position:fixed;left:0;right:0;bottom:0;z-index:90;background:#0f172a;border-top:1px solid rgba(255,255,255,.18);padding:12px 15px calc(12px + env(safe-area-inset-bottom,0px));display:none;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-@media(max-width:560px){.podium-grid{height:200px}.nm{font-size:1rem}}
+@media(max-width:560px){.podium-grid{height:200px}.nm{font-size:1rem}.pn{font-size:.9rem}.pav{font-size:1.8rem}}
+:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -105,6 +107,7 @@ header p{color:#94a3b8}
     <button class="tab" id="tab-shop" onclick="showShop()">🛍️ المتجر</button>
   </div>
   <div class="toast" id="toast"></div>
+  <div id="bkp"></div>
   <div id="shopPage" style="display:none"><div id="shBody"></div></div>
   <div class="goal" id="goal"></div>
   <div id="prize"></div>
@@ -221,6 +224,7 @@ header p{color:#94a3b8}
 <div id="selBar" class="selbar"></div>
 
 <script>
+if(typeof confetti==='function'){const _cf=confetti;window.confetti=o=>_cf(Object.assign({disableForReducedMotion:true},o))}
 const NAMES=[];
 const AVATARS=["🦁","🦅","⚡","🚀","🎯","🌟","🛡️","🔥","💎","🐯","🦉","🌙"];
 
@@ -401,7 +405,7 @@ function render(){
   {const sd=shopMode?'none':'';['goal','prize','cong','daily','weekly','heroes','list'].forEach(id=>document.getElementById(id).style.display=sd);document.querySelector('.podium-section').style.display=sd;document.getElementById('shopPage').style.display=shopMode?'':'none'}
   document.getElementById('vt-month').classList.toggle('on',view()==='month');document.getElementById('vt-week').classList.toggle('on',view()==='week');document.getElementById('vt-all').classList.toggle('on',!vm);
   document.getElementById('vt-month').textContent='📅 '+labelOf(new Date(),calOf());
-  document.getElementById('badge').textContent='🕌 '+HN();document.getElementById('tname').textContent=TN();renderExtras();renderPrize();renderCong();
+  document.getElementById('badge').textContent='🕌 '+HN();document.getElementById('tname').textContent=TN();renderExtras();renderPrize();renderCong();renderBackupNudge();
   document.getElementById('podTitle').textContent=L.pod;
   [1,2,3].forEach(i=>{
     const s=list[i-1],ok=s&&(!vm||rv(s)>0);
@@ -416,8 +420,8 @@ function render(){
     <div class="l">${selMode?`<span style="font-size:1.4rem">${on?'☑️':'⬜'}</span>`:''}<div class="rn ${i<3&&rk?'t'+(i+1):''}">${i+1}</div><div class="av" ${selMode?'':`style="cursor:pointer" title="تغيير الرمز" onclick="pickAvatar(${s.id})"`}>${esc(s.avatar)}</div>
      <div><span class="nm">${esc(s.name)}${isStar(s)?' 🌟':''}<span class="lv">${lvl(s.score)}</span>${streak(s)>=2?`<span class="lv" style="background:rgba(244,63,94,.25);color:#fda4af">🔥 ${streak(s)}</span>`:''}${todayChip(s)}${nbd(s)}</span>${i<3&&rk?`<span class="bd">${badges[i]}</span>`:''}${vm?`<span class="bd" style="color:#94a3b8;margin-right:${i<3&&rk?'8px':'0'}">${view()==='week'?'الشهر '+mp(s,ck)+' · ':''}الإجمالي ${s.score}</span>`:''}${nextLine(s)}</div></div>
     <div class="r"><span class="sc">${rv(s)}</span>${selMode?'':`
-     <button class="btn q add" onclick="quick(${s.id},1)">+1</button>
-     <button class="btn q sub" onclick="quick(${s.id},-1)">-1</button>
+     <button class="btn q add" onclick="quick(${s.id},1)" aria-label="زيادة نقطة"><bdi dir="ltr">+1</bdi></button>
+     <button class="btn q sub" onclick="quick(${s.id},-1)" aria-label="خصم نقطة"><bdi dir="ltr">-1</bdi></button>
      <button class="btn" onclick="openModal(${s.id})">⭐ البنود</button>
      <button class="btn hist" onclick="openHist(${s.id})">📜 السجل (${s.history.length})</button>`}</div>
    </div>`}).join(''):'<div class="empty">أهلاً بك 🌹<br>اضغط <b>➕ إضافة طالب</b> في الأسفل واكتب أسماء طلابك (تقدر تكتب عدة أسماء بينها فاصلة).<br>ومن <b>⚙️ الإعدادات</b> تغيّر اسم الحلقة والبنود والجوائز.</div>';
@@ -509,7 +513,7 @@ function openHist(id){
   document.getElementById('hTitle').textContent=`📜 سجل ${s.name} (${s.score} نقطة)`;renderBadgesBox(s);
   document.getElementById('hList').innerHTML=s.history.length?s.history.map(h=>{
     const c=h.spent?'':h.points>=0?'pos':'neg';
-    return `<div class="he ${c}"><div><div class="hr">${esc(h.reason)}</div><div class="ht">🕒 ${esc(h.time)}</div></div><div class="hp">${h.spent?'🛍️ -'+h.spent:(h.points>=0?'+':'')+h.points}</div></div>`;
+    return `<div class="he ${c}"><div><div class="hr">${esc(h.reason)}</div><div class="ht">🕒 ${esc(h.time)}</div></div><div class="hp"><bdi dir="ltr">${h.spent?'🛍️ -'+h.spent:(h.points>=0?'+':'')+h.points}</bdi></div></div>`;
   }).join(''):'<div class="empty">لا توجد حركات مسجلة لهذا الطالب حتى الآن.</div>';
   document.getElementById('hov').style.display='flex';
 }
@@ -536,6 +540,9 @@ function syncRemote(){
 function addStudent(){
   const raw=prompt('اكتب اسم الطالب، أو عدة أسماء يفصل بينها فاصلة (،):');
   const names=(raw||'').split(/[,،\n]/).map(x=>x.trim()).filter(Boolean);
+  const have=new Set(data.local.map(x=>x.name.trim())),dup=[];
+  for(let i=names.length-1;i>=0;i--){if(have.has(names[i])||names.indexOf(names[i])!==i){dup.push(names[i]);names.splice(i,1)}else have.add(names[i])}
+  if(dup.length)setTimeout(()=>toast('الاسم موجود مسبقاً: '+dup.join('، ')),50);
   if(names.length)snap('إضافة طلاب');
   names.forEach(name=>{const av=AVATARS[Math.floor(Math.random()*AVATARS.length)];
     for(const k of ['local','remote'])data[k].push({id:Math.max(0,...data[k].map(s=>s.id))+1,name,avatar:av,score:0,history:[]})});
@@ -543,13 +550,28 @@ function addStudent(){
 }
 function resetScores(){
   const nm=cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد';
-  if(confirm(`تصفير نقاط وسجلات ${nm} فقط؟ (الدوري الآخر لن يتأثر)`)){snap('تصفير الدوري');S().forEach(s=>{s.score=0;s.history=[];s.m={};s.mc={}});render()}
+  if(!confirm(`⚠️ تصفير نقاط وسجلات ${nm} نهائياً؟ (الدوري الآخر لن يتأثر)\nيُنصح بحفظ نسخة احتياطية أولاً.`))return;
+  const w=prompt('للتأكيد اكتب كلمة: تصفير');
+  if(w===null||w.trim()!=='تصفير'){toast('لم يتم التصفير');return}
+  snap('تصفير الدوري');S().forEach(s=>{s.score=0;s.history=[];s.m={};s.mc={};s.shop={}});render();
 }
+/* تذكير بالنسخة الاحتياطية: كل بيانات الطلاب محفوظة في هذا الجوال فقط */
+function renderBackupNudge(){
+  const el=document.getElementById('bkp'),c=meta.cfg,last=c.lastBackup||0,now=Date.now();
+  const has=data.local.some(x=>x.history.length)||data.remote.some(x=>x.history.length);
+  if(!has||shopMode||now-last<7*864e5||now<(c.bkSnooze||0)){el.className='';el.innerHTML='';el.style.borderColor='';return}
+  const d=Math.floor((now-last)/864e5);
+  el.className='goal';el.style.borderColor='var(--rose)';
+  el.innerHTML=`<div class="gtop"><span>💾 ${last?'مضى '+d+' يوماً على آخر نسخة احتياطية':'لم تحفظ نسخة احتياطية بعد'}</span><span style="display:flex;gap:6px"><button class="btn add" onclick="exportData()">💾 احفظ الآن</button><button class="btn" onclick="snoozeBk()">لاحقاً</button></span></div><div style="color:#94a3b8;font-size:.82rem;margin-top:6px">بيانات الطلاب محفوظة في هذا الجوال فقط. نسخة واحدة تحميها إن ضاع الجهاز أو مُسحت بيانات المتصفح.</div>`;
+}
+function snoozeBk(){meta.cfg.bkSnooze=Date.now()+2*864e5;render()}
 function exportData(){
+  meta.cfg.lastBackup=Date.now();
   const b=new Blob([JSON.stringify({version:4,local:data.local,remote:data.remote,meta},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);
   a.download='دوري_القرآن_'+new Date().toISOString().slice(0,10)+'.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  save();renderBackupNudge();toast('✅ حُفظت النسخة الاحتياطية');
 }
 function importData(){
   const inp=document.createElement('input');inp.type='file';inp.accept='.json';
@@ -603,7 +625,7 @@ function knightsHtml(list){
   if(!t.length){w=pw;lab='الأسبوع الماضي';t=top(pw,ws)}
   if(!t.length)return '';
   const kd=(meta[cur].kd=meta[cur].kd||{}),done=!!kd[w];
-  return `<div class="hero" style="grid-column:1/-1">⚔️ فرسان ${lab}<b>${t.map((x,i)=>['🥇','🥈','🥉'][i]+' '+esc(x[0].name)+' ('+x[1]+')').join(' · ')}</b><button class="btn ${done?'add':''}" style="margin-top:8px" onclick="toggleKd(${w})">${done?'✅ سُلّمت الحلويات':'⬜ تسليم كرتون الحلويات'}</button></div>`;
+  return `<div class="hero" style="grid-column:1/-1">⚔️ فرسان ${lab}<b>${t.map((x,i)=>`<span style="display:inline-block;white-space:nowrap;margin:2px 8px">${['🥇','🥈','🥉'][i]} ${esc(x[0].name)} <bdi dir="ltr">(${x[1]})</bdi></span>`).join('')}</b><button class="btn ${done?'add':''}" style="margin-top:8px" onclick="toggleKd(${w})">${done?'✅ سُلّمت الحلويات':'⬜ تسليم كرتون الحلويات'}</button></div>`;
 }
 function toggleKd(w){const kd=(meta[cur].kd=meta[cur].kd||{});kd[w]=!kd[w];render()}
 /* الأهداف الجماعية: قائمة مراحل مرتبة بعدد النقاط (الهدف الحالي = أول مرحلة لم تتحقق) */
@@ -1039,7 +1061,12 @@ function certCat(k,id,i){
 /* ---- المتجر (تبويب): مفتوح للجميع، وغير القادر بنقاطه لا يشتري. جائزة واحدة لكل طالب في الشهر، والخصم افتراضي ---- */
 let shopK=null,shopMode=false;
 const shopLab=x=>x===curKey()?labelOf(new Date(),calOf()):mlab(x);
-function showShop(k){cur='local';shopMode=true;shopK=k||shopK||curKey();selSet.clear();render();window.scrollTo(0,0)}
+function defaultShopK(){
+  const pk=pastKeys()[0];
+  if(pk&&new Date().getDate()<=7&&data.local.some(x=>mp(x,pk)>0&&!(x.shop||{})[pk]&&SHOP.some(z=>z[0]>0&&z[0]<=mp(x,pk))))return pk;
+  return curKey();
+}
+function showShop(k){cur='local';shopMode=true;shopK=k||defaultShopK();selSet.clear();render();window.scrollTo(0,0)}
 const openShop=showShop;
 function shopTab(k){shopK=k;renderShop()}
 function renderShop(){
