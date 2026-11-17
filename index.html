@@ -102,8 +102,10 @@ header p{color:#94a3b8}
   <div class="tabs">
     <button class="tab" id="tab-local" onclick="switchLeague('local')">🕌 الحلقة الحضورية</button>
     <button class="tab" id="tab-remote" onclick="switchLeague('remote')">💻 الحلقة عن بعد</button>
+    <button class="tab" id="tab-shop" onclick="showShop()">🛍️ المتجر</button>
   </div>
   <div class="toast" id="toast"></div>
+  <div id="shopPage" style="display:none"><div id="shBody"></div></div>
   <div class="goal" id="goal"></div>
   <div id="prize"></div>
   <div id="cong"></div>
@@ -123,7 +125,6 @@ header p{color:#94a3b8}
   <div class="bar">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       
-      <button class="btn add" onclick="openShop()">🛍️ متجر الشهر</button>
       <button class="btn add" onclick="weeklyReport()">📊 صورة تقرير الأسبوع</button>
       <button class="btn add" onclick="openSet()">⚙️ الإعدادات</button>
       <button class="btn" onclick="addStudent()">➕ إضافة طالب</button>
@@ -205,7 +206,6 @@ header p{color:#94a3b8}
   </div>
 </div>
 
-<div class="ov" id="shov"><div class="modal"><div class="mh"><h2>🛍️ متجر الشهر</h2><button class="x" onclick="closeShop()">&times;</button></div><div id="shBody"></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn undoBtn" onclick="undo();renderShop()">↩️ تراجع</button><button class="btn" onclick="closeShop()">إغلاق</button></div></div></div>
 <div class="ov" id="fov"><div class="modal"><div class="mh"><h2>🏅 لوحة شرف الشهور</h2><button class="x" onclick="closeHall()">&times;</button></div><div id="fList"></div><div style="margin-top:14px"><button class="btn" onclick="closeHall()">إغلاق</button></div></div></div>
 <div class="ov" id="pov"><div class="modal" style="max-width:460px"><div class="mh"><h2>اختر رمز الطالب</h2><button class="x" onclick="closePov()">&times;</button></div><div class="grid" id="avGrid" style="grid-template-columns:repeat(auto-fill,minmax(56px,1fr))"></div></div></div>
 <div id="dov" onclick="closeDisp()">
@@ -271,6 +271,11 @@ const SHOP2=[[50,'✏️ أقلام وملصقات'],[60,'🃏 بطاقات لا
  [120,'🎤 اختيار نشيد أو قصة ختام الحلقة'],[135,'⚽ كرة صغيرة'],[150,'🎮 بطاقة شحن ألعاب (متوسطة)'],[165,'🍦 مثلجات أو بيتزا'],
  [200,'📱 كفر جوال'],[225,'👕 قميص فريقك المفضل'],[245,'🎳 بولينج أو كارتينج'],[270,'🔋 باور بانك'],
  [340,'🎧 سماعات'],[370,'⌚ ساعة'],[395,'🎮 بطاقة شحن ألعاب (كبيرة)'],[420,'🏟️ حضور مباراة مباشرة']];
+/* جوائز المتجر الافتراضية = ما اختاره المعلم من الجدول (بدون الطعام) */
+const SHOP3=[[50,'🃏 بطاقات لاعبين'],[65,'🎮 بطاقة شحن صغيرة'],[80,'🧑‍🏫 مساعد المعلم في حلقة'],
+ [120,'⚽ كرة صغيرة'],[140,'🎮 بطاقة شحن متوسطة'],[165,'🎤 اختيار نشاط ختام الحلقة'],
+ [200,'📱 كفر جوال'],[220,'👕 قميص فريقه المفضل'],[240,'🕹️ ساعة لعب في صالة ألعاب مع صديق'],[255,'🔋 باور بانك'],[270,'🎳 بولينج أو كارتينج'],
+ [340,'🎧 سماعات ألعاب'],[370,'🎮 بطاقة شحن كبيرة'],[395,'⌚ ساعة'],[420,'🏟️ حضور مباراة مباشرة']];
 const TIERN=['🥉 تشجيعية','🥈 جيدة','🥇 مميزة','💎 كبرى'];
 const tiersOf=()=>{const t=meta.cfg&&meta.cfg.tiers;return Array.isArray(t)&&t.length===4?t:[50,120,200,340]};
 const tierIdx=p=>tiersOf().reduce((a,m,i)=>p>=m?i:a,-1);
@@ -286,9 +291,9 @@ function applyMeta(){
     if(it.shop)SHOP.splice(0,SHOP.length,...it.shop);
   }
   /* ترحيل المتجر للنظام الجديد (مرة واحدة): جوائز المستويات الافتراضية إن لم تكن هناك جوائز مخصصة */
-  if(meta.cfg.shopV!==2){
-    if(!it||!it.shop||!it.shop.length)SHOP.splice(0,SHOP.length,...SHOP2.map(a=>[...a]));
-    meta.items=meta.items||{};meta.items.shop=[...SHOP];meta.cfg.shopV=2;
+  if(meta.cfg.shopV!==3){
+    if(!it||!it.shop||!it.shop.length||JSON.stringify(it.shop)===JSON.stringify(SHOP2))SHOP.splice(0,SHOP.length,...SHOP3.map(a=>[...a]));
+    meta.items=meta.items||{};meta.items.shop=[...SHOP];meta.cfg.shopV=3;
   }
 }
 applyMeta();
@@ -385,13 +390,15 @@ function beep(up){
     o.start();o.stop(t+d);
   }catch(e){}
 }
-function switchLeague(k){cur=k;selSet.clear();render()}
+function switchLeague(k){cur=k;shopMode=false;selSet.clear();render()}
 function render(){
   migrateM();checkGrowth();
   const L=LEAGUES[cur],list=S(),vm=view()!=='all',ck=curKey();
   const rv=rvOf();
   list.sort((a,b)=>rv(b)-rv(a)||b.score-a.score);
-  ['local','remote'].forEach(k=>document.getElementById('tab-'+k).classList.toggle('on',k===cur));
+  ['local','remote'].forEach(k=>document.getElementById('tab-'+k).classList.toggle('on',k===cur&&!shopMode));
+  document.getElementById('tab-shop').classList.toggle('on',shopMode);
+  {const sd=shopMode?'none':'';['goal','prize','cong','daily','weekly','heroes','list'].forEach(id=>document.getElementById(id).style.display=sd);document.querySelector('.podium-section').style.display=sd;document.getElementById('shopPage').style.display=shopMode?'':'none'}
   document.getElementById('vt-month').classList.toggle('on',view()==='month');document.getElementById('vt-week').classList.toggle('on',view()==='week');document.getElementById('vt-all').classList.toggle('on',!vm);
   document.getElementById('vt-month').textContent='📅 '+labelOf(new Date(),calOf());
   document.getElementById('badge').textContent='🕌 '+HN();document.getElementById('tname').textContent=TN();renderExtras();renderPrize();renderCong();
@@ -417,6 +424,7 @@ function render(){
   const sb=document.getElementById('selBtn');if(sb)sb.textContent=selMode?'✖️ إنهاء التحديد':'☑️ تحديد عدة طلاب';
   renderSelBar();updMute();
   if(document.getElementById('dov').style.display==='flex')renderDisp();
+  if(shopMode)renderShop();
   updUndo();save();
 }
 function log(s,p,reason,extra){
@@ -1028,66 +1036,63 @@ function certCat(k,id,i){
   const cpz=meta.cfg&&meta.cfg.cprize;
   makeCert({name:w.n,avatar:w.a,line:'لتميّزه في «'+c.n+'» خلال '+mlab(k)+(cpz?' ونيله جائزة: '+cpz:'')});
 }
-/* ---- متجر الشهر: جائزة واحدة لكل طالب، والخصم افتراضي (يُسجَّل المتبقي ولا تتأثر نقاط الشهر ولا الترتيب) ---- */
-let shopK=null;
+/* ---- المتجر (تبويب): مفتوح للجميع، وغير القادر بنقاطه لا يشتري. جائزة واحدة لكل طالب في الشهر، والخصم افتراضي ---- */
+let shopK=null,shopMode=false;
 const shopLab=x=>x===curKey()?labelOf(new Date(),calOf()):mlab(x);
-function openShop(k){
-  if(cur!=='local')switchLeague('local');
-  shopK=k||curKey();renderShop();document.getElementById('shov').style.display='flex';
-}
-function closeShop(){document.getElementById('shov').style.display='none'}
+function showShop(k){cur='local';shopMode=true;shopK=k||shopK||curKey();selSet.clear();render();window.scrollTo(0,0)}
+const openShop=showShop;
 function shopTab(k){shopK=k;renderShop()}
 function renderShop(){
-  const k=shopK,T=tiersOf(),list=[...S()].sort((a,b)=>mp(b,k)-mp(a,k)||b.score-a.score);
+  const k=shopK||(shopK=curKey()),T=tiersOf(),list=[...data.local].sort((a,b)=>mp(b,k)-mp(a,k)||b.score-a.score);
   const pr=SHOP.map((x,i)=>({i,p:x[0],n:x[1]})).filter(x=>x.n&&x.p>0).sort((a,b)=>a.p-b.p);
   const keys=[...new Set([curKey(),...pastKeys().slice(0,3),k])];
-  const tabs=`<div class="tabs" style="margin-bottom:10px;flex-wrap:wrap">${keys.map(x=>`<button class="tab ${x===k?'on':''}" style="font-size:.8rem;padding:8px 6px" onclick="shopTab('${x}')">${esc(shopLab(x))}${x===curKey()?' ●':''}</button>`).join('')}</div>`;
+  const tabs=`<div class="tabs" style="margin-bottom:10px;flex-wrap:wrap">${keys.map(x=>`<button class="tab ${x===k?'on':''}" style="font-size:.85rem;padding:8px 6px" onclick="shopTab('${x}')">${esc(shopLab(x))}${x===curKey()?' (الحالي)':''}</button>`).join('')}</div>`;
   const tl=t=>t<0?'🎁 أخرى':TIERN[t];
-  const legend=`<details style="margin-bottom:10px"><summary style="cursor:pointer;color:#fcd34d">📋 قائمة الجوائز (${pr.length})</summary>${[-1,0,1,2,3].map(t=>{const g=pr.filter(x=>tierIdx(x.p)===t);return g.length?`<div style="margin:6px 0;font-size:.88rem"><b>${tl(t)}${t>=0?' (من '+T[t]+')':''}:</b> ${g.map(x=>esc(x.n)+' <b>'+x.p+'</b>').join(' · ')}</div>`:''}).join('')}</details>`;
+  const cat=[-1,0,1,2,3].map(t=>{const g=pr.filter(x=>tierIdx(x.p)===t);return g.length?`<div style="margin:8px 0"><div class="st" style="color:#fcd34d;margin:0 0 4px">${tl(t)}${t>=0?' · من '+T[t]+' نقطة':''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${g.map(x=>`<span class="lv" style="background:rgba(245,158,11,.15);color:#fde68a;font-size:.85rem">${esc(x.n)} <b>${x.p}</b></span>`).join('')}</div></div>`:''}).join('');
   const need={};let notPicked=0;
-  const rows=[],idle=[];
-  list.forEach(s=>{
-    const p=mp(s,k),c=(s.shop||{})[k];
-    if(!p&&!c){idle.push(s.name);return}
-    const ti=tierIdx(p),av=pr.filter(x=>x.p<=p);
+  const rows=list.map(s=>{
+    const p=mp(s,k),c=(s.shop||{})[k],ti=tierIdx(p),av=pr.filter(x=>x.p<=p);
     let body,col='#64748b';
     if(c){
       col=c.dv?'var(--em)':'var(--gold)';
       if(!c.dv)need[c.n]=(need[c.n]||0)+1;
       body=`<div style="margin-top:6px">🛍️ <b>${esc(c.n)}</b> <small style="color:#94a3b8">(${c.p} نقطة · المتبقي ${p-c.p} تُصفَّر)</small></div><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ${c.dv?'add':''}" onclick="shopDeliver(${s.id})">${c.dv?'✅ تم التسليم':'⬜ تسليم الجائزة'}</button><button class="btn" onclick="shopClear(${s.id})">✏️ تغيير الاختيار</button></div>`;
+    }else if(!p){
+      body=`<div style="margin-top:6px;color:#94a3b8;font-size:.88rem">🔒 لا نقاط له هذا الشهر، فلا يستطيع الشراء</div>`;
     }else if(av.length){
       notPicked++;col='var(--cy)';
       const best=av[av.length-1];let h='',last=-2;
       av.forEach(x=>{const t=tierIdx(x.p);if(t!==last){if(last!==-2)h+='</optgroup>';h+=`<optgroup label="${tl(t)}">`;last=t}h+=`<option value="${x.i}" ${x===best?'selected':''}>${esc(x.n)} — ${x.p} نقطة</option>`});
       h+='</optgroup>';
-      body=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><select id="shs${s.id}" style="flex:1;min-width:0;background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px">${h}</select><button class="btn add" onclick="shopPick(${s.id})">✅ اختيار</button></div>`;
+      body=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><select id="shs${s.id}" style="flex:1;min-width:0;background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px">${h}</select><button class="btn add" onclick="shopPick(${s.id})">🛒 شراء</button></div>`;
     }else{
-      body=`<div style="margin-top:6px;color:#94a3b8;font-size:.88rem">${pr.length?'لم يبلغ أول جائزة: باقي '+(pr[0].p-p)+' نقطة':'أضف جوائز من ⚙️ الإعدادات'}</div>`;
+      body=`<div style="margin-top:6px;color:#94a3b8;font-size:.88rem">${pr.length?'🔒 نقاطه لا تكفي بعد: باقي '+(pr[0].p-p)+' نقطة لأول جائزة':'لا توجد جوائز في المتجر'}</div>`;
     }
-    rows.push(`<div class="he" style="display:block;border-right-color:${col}"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(s.avatar)} ${esc(s.name)}</b><span style="color:#fcd34d">⭐ ${p} نقطة · ${ti<0?'—':TIERN[ti]}</span></div>${body}</div>`);
-  });
+    return `<div class="he" style="display:block;border-right-color:${col}"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(s.avatar)} ${esc(s.name)}</b><span style="color:#fcd34d">⭐ ${p} نقطة${ti<0?'':' · '+TIERN[ti]}</span></div>${body}</div>`;
+  }).join('');
   const nl=Object.keys(need).map(n=>esc(n)+' ×'+need[n]).join('، ');
-  document.getElementById('shBody').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin:0 0 10px">لكل طالب جائزة واحدة يختارها من الجوائز التي بلغتها نقاطه. الخصم افتراضي: يُسجَّل ما استُبدل والمتبقي، ولا تتأثر نقاط الشهر ولا الترتيب.</p>${tabs}${legend}${nl?`<div class="goal" style="margin-bottom:10px;padding:10px 12px"><b>🧾 المطلوب تجهيزه:</b> ${nl}</div>`:''}${notPicked?`<div style="color:#67e8f9;font-size:.88rem;margin-bottom:6px">⏳ لم يختر بعد: ${notPicked} طالب</div>`:''}${rows.join('')||'<div class="empty">لا نقاط في هذا الشهر بعد.</div>'}${idle.length?`<div style="color:#94a3b8;font-size:.82rem;margin-top:10px">بلا نقاط هذا الشهر: ${idle.map(esc).join('، ')}</div>`:''}`;
+  document.getElementById('shBody').innerHTML=`<div class="goal"><div class="gtop"><span>🛍️ متجر الحلقة</span><button class="btn undoBtn" onclick="undo()">↩️ تراجع</button></div><p style="color:#94a3b8;font-size:.85rem;margin:8px 0">المتجر مفتوح للجميع، ومن لا نقاط له أو لا تكفيه نقاطه لا يستطيع الشراء. لكل طالب جائزة واحدة في الشهر، والخصم افتراضي: يُسجَّل المتبقي دون أن تتأثر نقاط الشهر أو الترتيب.</p>${tabs}${cat}</div>${nl?`<div class="goal" style="padding:10px 14px"><b>🧾 المطلوب تجهيزه:</b> ${nl}</div>`:''}${notPicked?`<div style="color:#67e8f9;font-size:.88rem;margin:0 0 8px">⏳ لم يشترِ بعد (ولديه نقاط تكفي): ${notPicked} طالب</div>`:''}${rows||'<div class="empty">لا يوجد طلاب.</div>'}`;
+  updUndo();
 }
 function shopPick(id){
   const s=find(id),k=shopK,el=document.getElementById('shs'+id);if(!s||!el)return;
   const pz=SHOP[+el.value];if(!pz||pz[0]>mp(s,k)){toast('نقاط الطالب لا تكفي لهذه الجائزة');return}
-  if((s.shop||{})[k]){toast('اختار جائزته مسبقاً');return}
+  if((s.shop||{})[k]){toast('اشترى جائزته مسبقاً');return}
   if(!confirm(`تأكيد: ${s.name} ← ${pz[1]} (${pz[0]} نقطة)؟`))return;
   snap('جائزة '+s.name);
   (s.shop=s.shop||{})[k]={n:pz[1],p:pz[0],t:Date.now()};
   log(s,0,'🛍️ جائزة '+shopLab(k)+': '+pz[1],{spent:pz[0]});
   beep(true);if(typeof confetti==='function')confetti({particleCount:70,spread:70,origin:{y:.4}});
-  render();renderShop();
+  render();
 }
 function shopClear(id){
   const s=find(id),k=shopK;if(!s||!(s.shop||{})[k])return;
-  if(!confirm(`إلغاء اختيار ${s.name} (${s.shop[k].n}) ليختار من جديد؟`))return;
-  snap('إلغاء جائزة '+s.name);delete s.shop[k];render();renderShop();
+  if(!confirm(`إلغاء شراء ${s.name} (${s.shop[k].n}) ليختار من جديد؟`))return;
+  snap('إلغاء جائزة '+s.name);delete s.shop[k];render();
 }
 function shopDeliver(id){
   const s=find(id),k=shopK,c=s&&(s.shop||{})[k];if(!c)return;
-  c.dv=!c.dv;render();renderShop();
+  c.dv=!c.dv;render();
 }
 /* ---- حزم الإعدادات ---- */
 function bunSec(){
@@ -1133,7 +1138,6 @@ window.addEventListener('click',e=>{
   if(e.target.id==='rov')closeRep();
   if(e.target.id==='pov')closePov();
   if(e.target.id==='fov')closeHall();
-  if(e.target.id==='shov')closeShop();
 });
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
   const had=!!navigator.serviceWorker.controller;
