@@ -123,6 +123,7 @@ header p{color:#94a3b8}
   <div class="bar">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       
+      <button class="btn add" onclick="openShop()">🛍️ متجر الشهر</button>
       <button class="btn add" onclick="weeklyReport()">📊 صورة تقرير الأسبوع</button>
       <button class="btn add" onclick="openSet()">⚙️ الإعدادات</button>
       <button class="btn" onclick="addStudent()">➕ إضافة طالب</button>
@@ -149,8 +150,6 @@ header p{color:#94a3b8}
     <div class="st" style="color:var(--rose)">⚠️ الخصومات والملاحظات:</div>
     <div class="grid" id="negItems"></div>
     <button class="btn add" id="starBtn" style="margin-top:12px" onclick="setStar()">🌟 اجعله طالب اليوم (+2)</button>
-    <div class="st" id="shopHead" style="color:#fcd34d">🛍️ متجر النقاط (رصيد الطالب: <span id="shopBal"></span>)</div>
-    <div class="grid" id="shopItems"></div>
     <div class="custom">
       <input id="cReason" style="flex:1.5;min-width:0" placeholder="سبب الإضافة/الخصم...">
       <input id="cPts" type="number" style="width:100px" placeholder="+ أو -">
@@ -206,6 +205,7 @@ header p{color:#94a3b8}
   </div>
 </div>
 
+<div class="ov" id="shov"><div class="modal"><div class="mh"><h2>🛍️ متجر الشهر</h2><button class="x" onclick="closeShop()">&times;</button></div><div id="shBody"></div><div style="margin-top:14px;display:flex;gap:8px"><button class="btn undoBtn" onclick="undo();renderShop()">↩️ تراجع</button><button class="btn" onclick="closeShop()">إغلاق</button></div></div></div>
 <div class="ov" id="fov"><div class="modal"><div class="mh"><h2>🏅 لوحة شرف الشهور</h2><button class="x" onclick="closeHall()">&times;</button></div><div id="fList"></div><div style="margin-top:14px"><button class="btn" onclick="closeHall()">إغلاق</button></div></div></div>
 <div class="ov" id="pov"><div class="modal" style="max-width:460px"><div class="mh"><h2>اختر رمز الطالب</h2><button class="x" onclick="closePov()">&times;</button></div><div class="grid" id="avGrid" style="grid-template-columns:repeat(auto-fill,minmax(56px,1fr))"></div></div></div>
 <div id="dov" onclick="closeDisp()">
@@ -266,15 +266,30 @@ const META_KEY='quran_tpl_meta_v1';
 let meta={local:{target:100,prize:'اكتب هدف الحلقة (اضغط هنا)'},remote:{target:100,prize:'اكتب هدف الحلقة (اضغط هنا)'}};
 try{const m=JSON.parse(localStorage.getItem(META_KEY));if(m&&m.local&&m.remote)meta=m}catch(e){}
 const SHOP=[[10,'✏️ قلم مميز'],[20,'🍬 حلوى'],[30,'🎤 اختيار نشيد أو دعاء الحلقة'],[50,'🧑‍🏫 مساعد المعلم في حصة'],[80,'🎁 هدية كبرى']];
+/* جوائز المتجر الافتراضية (السعر = عتبة النقاط الشهرية؛ المعلم يعدّلها من الإعدادات) */
+const SHOP2=[[50,'✏️ أقلام وملصقات'],[60,'🃏 بطاقات لاعبين'],[70,'🍬 حلوى وعصير'],[80,'🧑‍🏫 مساعد المعلم في حلقة'],
+ [120,'🎤 اختيار نشيد أو قصة ختام الحلقة'],[135,'⚽ كرة صغيرة'],[150,'🎮 بطاقة شحن ألعاب (متوسطة)'],[165,'🍦 مثلجات أو بيتزا'],
+ [200,'📱 كفر جوال'],[225,'👕 قميص فريقك المفضل'],[245,'🎳 بولينج أو كارتينج'],[270,'🔋 باور بانك'],
+ [340,'🎧 سماعات'],[370,'⌚ ساعة'],[395,'🎮 بطاقة شحن ألعاب (كبيرة)'],[420,'🏟️ حضور مباراة مباشرة']];
+const TIERN=['🥉 تشجيعية','🥈 جيدة','🥇 مميزة','💎 كبرى'];
+const tiersOf=()=>{const t=meta.cfg&&meta.cfg.tiers;return Array.isArray(t)&&t.length===4?t:[50,120,200,340]};
+const tierIdx=p=>tiersOf().reduce((a,m,i)=>p>=m?i:a,-1);
 const LEVELS=[[0,'🌱 برعم النور'],[10,'🌿 غصن مثمر'],[25,'🌸 زهرة الحلقة'],[50,'🌙 بدر الحلقة'],[90,'⭐ نجم الحلقة'],[150,'🌟 نجم متألق'],[250,'👑 تاج الحلقة'],[400,'💎 جوهرة الحلقة']];
 const lvl=p=>([...LEVELS].reverse().find(l=>p>=l[0])||LEVELS[0])[1];
 const QUOTES=['«خيركم من تعلّم القرآن وعلّمه»','﴿وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا﴾','«اقرؤوا القرآن فإنه يأتي يوم القيامة شفيعاً لأصحابه»','«الماهر بالقرآن مع السفرة الكرام البررة»'];
 const HN=()=>(meta.cfg&&meta.cfg.halaqa)||'اسم الحلقة',TN=()=>(meta.cfg&&meta.cfg.teacher)||'اسم المعلم';
 function applyMeta(){
   meta.cfg=meta.cfg||{halaqa:'',teacher:''};
-  const it=meta.items;if(!it)return;
-  for(const k of ['local','remote'])if(it[k]){LEAGUES[k].pos=it[k].pos;LEAGUES[k].neg=it[k].neg;LEAGUES[k].bun=it[k].bun||[]}
-  if(it.shop)SHOP.splice(0,SHOP.length,...it.shop);
+  const it=meta.items;
+  if(it){
+    for(const k of ['local','remote'])if(it[k]){LEAGUES[k].pos=it[k].pos;LEAGUES[k].neg=it[k].neg;LEAGUES[k].bun=it[k].bun||[]}
+    if(it.shop)SHOP.splice(0,SHOP.length,...it.shop);
+  }
+  /* ترحيل المتجر للنظام الجديد (مرة واحدة): جوائز المستويات الافتراضية إن لم تكن هناك جوائز مخصصة */
+  if(meta.cfg.shopV!==2){
+    if(!it||!it.shop||!it.shop.length)SHOP.splice(0,SHOP.length,...SHOP2.map(a=>[...a]));
+    meta.items=meta.items||{};meta.items.shop=[...SHOP];meta.cfg.shopV=2;
+  }
 }
 applyMeta();
 let cur='local',sel=null,ctx=null;
@@ -433,17 +448,12 @@ function refreshModal(){
   document.getElementById('mTitle').textContent=G?`إسناد بنود لـ ${grp.length} طلاب`:'إسناد إنجاز للطالب: '+s.name;
   if(G)document.getElementById('todayLine').innerHTML='👥 '+grp.map(id=>find(id)).filter(Boolean).map(x=>esc(x.name)).join('، ');
   else{const t=today(s),net=t[0]+t[1];document.getElementById('todayLine').innerHTML=`📅 اليوم: <b style="color:var(--em)">+${t[0]}</b> / <b style="color:var(--rose)"><bdi dir="ltr">${t[1]}</bdi></b> ← الصافي <b style="color:#fcd34d"><bdi dir="ltr">${net>0?'+':''}${net}</bdi></b>`}
-  ['shopHead','shopItems','starBtn'].forEach(id=>document.getElementById(id).style.display=G?'none':'');
+  document.getElementById('starBtn').style.display=G?'none':'';
   const bn=L.bun||[];
   document.getElementById('bunBox').innerHTML=bn.length?`<div class="st" style="color:#c7d2fe">🎁 حزم جاهزة (تُحدَّد بنودها دفعة واحدة):</div><div style="display:flex;gap:8px;flex-wrap:wrap">${bn.map((b,i)=>`<button class="btn" style="background:rgba(99,102,241,.25);border-color:var(--pri)" onclick="addBundle(${i})">${esc(b.n)} <small><bdi dir="ltr">+${bundlePts(b)}</bdi></small></button>`).join('')}</div>`:'';
   const btn=(k,i,p)=>{const n=pend[k][i]||0,pos=k==='pos';return `<div class="it ${pos?'ip':'in'} ${n?'sel':''}" onclick="addPend('${k}',${i})"><span>${esc(p[1])}</span><span style="display:flex;align-items:center;gap:6px">${n?`<span class="cnt" title="إنقاص" onclick="event.stopPropagation();subPend('${k}',${i})">➖ ×${n}</span>`:''}<span class="${pos?'tp':'tn'}">${pos?'+':''}${p[0]} نقطة</span></span></div>`};
   document.getElementById('posItems').innerHTML=L.pos.map((p,i)=>btn('pos',i,p)).join('');
   document.getElementById('negItems').innerHTML=L.neg.map((p,i)=>btn('neg',i,p)).join('');
-  if(!G){
-    const bal=s.score-(s.spent||0);
-    document.getElementById('shopBal').textContent=bal;
-    document.getElementById('shopItems').innerHTML=SHOP.map((p,i)=>`<button class="it" style="opacity:${bal>=p[0]?1:.45}" onclick="buy(${i})"><span>${esc(p[1])}</span><span class="tp">${p[0]} نقطة</span></button>`).join('');
-  }
   let tot=0,cnt=0;
   for(const k of ['pos','neg'])for(const i in pend[k]){const n=pend[k][i],it=L[k][i];if(n>0&&it){tot+=it[0]*n;cnt+=n}}
   pcust.forEach(c=>{tot+=c[0];cnt++});
@@ -502,7 +512,18 @@ function clearHist(){
 }
 function deleteStudent(){
   const s=find(sel);if(!s)return;
-  if(confirm(`حذف الطالب ${s.name} من هذا الدوري نهائياً؟`)){snap('حذف '+s.name);data[cur]=S().filter(x=>x.id!==s.id);closeHist();render()}
+  if(confirm(`حذف الطالب ${s.name} نهائياً من الحلقتين (الحضورية وعن بعد) مع سجله؟`)){snap('حذف '+s.name);const n=s.name;data.local=data.local.filter(x=>x.name!==n);data.remote=data.remote.filter(x=>x.name!==n);closeHist();render()}
+}
+/* قائمة عن بعد = نفس أسماء الحضورية: يحذف المكرر والغريب الخالي من النشاط ويضيف الناقص */
+function syncRemote(){
+  const names=new Set(data.local.map(x=>x.name)),best=new Map(),order=[],wt=x=>(x.score||0)+x.history.length;
+  data.remote.forEach(x=>{
+    if(!names.has(x.name)&&!wt(x))return;
+    const o=best.get(x.name);
+    if(!o){best.set(x.name,x);order.push(x.name)}else if(wt(x)>wt(o))best.set(x.name,x);
+  });
+  data.remote=order.map(n=>best.get(n));
+  data.local.forEach(l=>{if(!best.has(l.name))data.remote.push({id:Math.max(0,...data.remote.map(x=>x.id))+1,name:l.name,avatar:l.avatar,score:0,history:[]})});
 }
 function addStudent(){
   const raw=prompt('اكتب اسم الطالب، أو عدة أسماء يفصل بينها فاصلة (،):');
@@ -536,7 +557,7 @@ function importData(){
           if(Array.isArray(d.remote)&&d.remote.length)data.remote=norm(d.remote);
           if(d.meta&&d.meta.local&&d.meta.remote)meta=d.meta,applyMeta();
         }else throw 0;
-        render();alert('تم استرجاع النسخة بنجاح!');
+        syncRemote();render();alert('تم استرجاع النسخة بنجاح!');
       }catch(err){alert('الملف غير صالح!')}
     };
     r.readAsText(f);
@@ -548,14 +569,6 @@ function toLocal(s,p){
   const t=(l.carry||0)+p,add=Math.floor(t/2);l.carry=t-add*2;
   if(add>0){l.score+=add;log(l,add,'💻 مكافأة من الحلقة عن بعد (50%)');setTimeout(()=>toast(`➕ أُضيف ${add} نقطة لـ${s.name} في الحضورية`),400)}
 }
-function buy(i){
-  const s=find(sel),p=SHOP[i];if(!s)return;
-  if(s.score-(s.spent||0)<p[0]){toast('الرصيد غير كافٍ، واصل التميز 💪');return}
-  if(!confirm(`استبدال ${p[0]} نقطة بـ ${p[1]} للطالب ${s.name}؟`))return;
-  snap('استبدال '+s.name);s.spent=(s.spent||0)+p[0];log(s,0,'🛍️ استبدل: '+p[1],{spent:p[0]});beep(true);
-  if(typeof confetti==='function')confetti({particleCount:60,spread:70});
-  closeModal();render();
-}
 let tt;
 function toast(m,big){
   const t=document.getElementById('toast');t.textContent=m;t.style.display='block';
@@ -565,25 +578,47 @@ function toast(m,big){
 function weekStart(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d.getTime()}
 function wk(s,from,to){return s.history.reduce((a,h)=>h.ts&&h.ts>=from&&h.ts<to&&!h.spent?a+h.points:a,0)}
 function renderExtras(){renderDaily();renderWeekly();
-  const list=S(),m=meta[cur],tot=list.reduce((a,s)=>a+s.score,0),pct=Math.max(0,Math.min(100,Math.round(tot/m.target*100)));
-  document.getElementById('goal').innerHTML=`<div class="gtop"><span style="cursor:pointer" title="اضغط لتعديل نص الهدف" onclick="editPrize()">🎯 هدف الحلقة: ${esc(m.prize)} ✏️</span><span style="cursor:pointer" title="اضغط لتعديل عدد النقاط" onclick="editTarget()">${tot} / ${m.target} ✏️</span></div><div class="gbar"><div class="gfill" style="width:${pct}%"></div></div><div class="gtop"><span style="color:#94a3b8;font-weight:400">${pct>=100?'🎉 تحقق الهدف! مبروك لكل الحلقة':'باقي '+(m.target-tot)+' نقطة وننال الجائزة بإذن الله'}</span><button class="btn" onclick="editGoal()">✏️ تعديل الهدف</button></div>`;
+  const list=S(),m=meta[cur],tot=list.reduce((a,s)=>a+s.score,0),gl=goalsOf(m).slice().sort((a,b)=>a.t-b.t),g=curStage(m,tot),nxt=gl.find(x=>tot<x.t),pct=Math.max(0,Math.min(100,Math.round(tot/g.t*100)));
+  const dn=gl.filter(x=>tot>=x.t),up=gl.filter(x=>x!==g&&tot<x.t);
+  document.getElementById('goal').innerHTML=`<div class="gtop"><span style="cursor:pointer" title="اضغط لتعديل نص الهدف" onclick="editPrize()">🎯 هدف الحلقة: ${esc(g.p)} ✏️</span><span style="cursor:pointer" title="اضغط لتعديل عدد النقاط" onclick="editTarget()">${tot} / ${g.t} ✏️</span></div><div class="gbar"><div class="gfill" style="width:${pct}%"></div></div><div class="gtop"><span style="color:#94a3b8;font-weight:400">${nxt?'باقي '+(g.t-tot)+' نقطة وننال «'+esc(g.p)+'» بإذن الله':'🎉 تحققت كل الأهداف! مبروك لكل الحلقة'}</span><button class="btn" onclick="editGoal()">✏️ تعديل الهدف</button></div>${dn.length?`<div style="font-size:.85rem;color:#6ee7b7;margin-top:6px">✅ تحققت: ${dn.map(x=>esc(x.p)+' ('+x.t+')').join(' · ')}</div>`:''}${up.length?`<div style="font-size:.85rem;color:#94a3b8;margin-top:4px">⏭️ القادمة: ${up.map(x=>esc(x.p)+' ('+x.t+')').join(' · ')}</div>`:''}`;
   const ws=weekStart(),pw=ws-6048e5,now=Date.now()+1;
   const cw=list.map(s=>[s,wk(s,ws,now)]).sort((a,b)=>b[1]-a[1])[0];
   const im=list.map(s=>[s,wk(s,ws,now)-wk(s,pw,ws)]).sort((a,b)=>b[1]-a[1])[0];
   const sd=meta[cur].star,sw=sd&&sd.d===dayKey()&&find(sd.id);
-  document.getElementById('heroes').innerHTML=(sw?`<div class="hero" style="grid-column:1/-1">🌟 طالب اليوم<b>${esc(sw.name)}</b>تكريماً لتميزه اليوم، بارك الله فيه</div>`:'')+`<div class="hero">🏅 بطل الأسبوع${cw&&cw[1]>0?`<b>${esc(cw[0].name)}</b>+${cw[1]} نقطة`:'<b>-</b>لم يُحدد بعد'}</div><div class="hero">📈 الأكثر تقدماً${im&&im[1]>0?`<b>${esc(im[0].name)}</b>+${im[1]} عن الأسبوع الماضي`:'<b>-</b>لم يُحدد بعد'}</div>`;
+  document.getElementById('heroes').innerHTML=knightsHtml(list)+(sw?`<div class="hero" style="grid-column:1/-1">🌟 طالب اليوم<b>${esc(sw.name)}</b>تكريماً لتميزه اليوم، بارك الله فيه</div>`:'')+`<div class="hero">🏅 بطل الأسبوع${cw&&cw[1]>0?`<b>${esc(cw[0].name)}</b>+${cw[1]} نقطة`:'<b>-</b>لم يُحدد بعد'}</div><div class="hero">📈 الأكثر تقدماً${im&&im[1]>0?`<b>${esc(im[0].name)}</b>+${im[1]} عن الأسبوع الماضي`:'<b>-</b>لم يُحدد بعد'}</div>`;
 }
+/* فرسان الأسبوع: أول 3 في ترتيب الأسبوع (وإن لم يبدأ الأسبوع بنقاط فالأسبوع الماضي) */
+function knightsHtml(list){
+  const ws=weekStart(),pw=ws-6048e5,now=Date.now()+1;
+  const top=(a,b)=>list.map(x=>[x,wk(x,a,b)]).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]).slice(0,3);
+  let w=ws,lab='هذا الأسبوع',t=top(ws,now);
+  if(!t.length){w=pw;lab='الأسبوع الماضي';t=top(pw,ws)}
+  if(!t.length)return '';
+  const kd=(meta[cur].kd=meta[cur].kd||{}),done=!!kd[w];
+  return `<div class="hero" style="grid-column:1/-1">⚔️ فرسان ${lab}<b>${t.map((x,i)=>['🥇','🥈','🥉'][i]+' '+esc(x[0].name)+' ('+x[1]+')').join(' · ')}</b><button class="btn ${done?'add':''}" style="margin-top:8px" onclick="toggleKd(${w})">${done?'✅ سُلّمت الحلويات':'⬜ تسليم كرتون الحلويات'}</button></div>`;
+}
+function toggleKd(w){const kd=(meta[cur].kd=meta[cur].kd||{});kd[w]=!kd[w];render()}
+/* الأهداف الجماعية: قائمة مراحل مرتبة بعدد النقاط (الهدف الحالي = أول مرحلة لم تتحقق) */
+function goalsOf(m){
+  if(!Array.isArray(m.goals)||!m.goals.length){
+    m.goals=[{t:m.target||100,p:m.prize||'اكتب هدف الحلقة (اضغط هنا)'}];
+    if(m===meta.local)m.goals.push({t:Math.max(3000,(m.target||0)*3),p:'🚌 رحلة الحلقة'});
+  }
+  return m.goals;
+}
+function curStage(m,tot){const gl=goalsOf(m).slice().sort((a,b)=>a.t-b.t);return gl.find(x=>tot<x.t)||gl[gl.length-1]}
+const totOf=()=>S().reduce((a,s)=>a+s.score,0);
 function editPrize(){
-  const m=meta[cur],p=prompt('اكتب نص الهدف أو الجائزة:',m.prize);
-  if(p&&p.trim()){m.prize=p.trim();render()}
+  const g=curStage(meta[cur],totOf()),p=prompt('اكتب نص الهدف أو الجائزة:',g.p);
+  if(p&&p.trim()){g.p=p.trim();render()}
 }
 function editTarget(){
-  const m=meta[cur],t=parseInt(prompt('عدد نقاط الهدف:',m.target),10);
-  if(t>0){m.target=t;render()}
+  const g=curStage(meta[cur],totOf()),t=parseInt(prompt('عدد نقاط الهدف:',g.t),10);
+  if(t>0){g.t=t;render()}
 }
 function editGoal(){
-  const m=meta[cur],t=parseInt(prompt('هدف الحلقة بالنقاط:',m.target),10);
-  if(!t||t<1)return;m.target=t;m.prize=(prompt('جائزة تحقيق الهدف:',m.prize)||m.prize).trim();render();
+  const g=curStage(meta[cur],totOf()),t=parseInt(prompt('هدف الحلقة بالنقاط (لإضافة أهداف أخرى: ⚙️ الإعدادات):',g.t),10);
+  if(!t||t<1)return;g.t=t;g.p=(prompt('جائزة تحقيق الهدف:',g.p)||g.p).trim();render();
 }
 function sendWA(){
   const s=find(sel);if(!s)return;
@@ -640,7 +675,7 @@ function weeklyReport(){
 function closeRep(){document.getElementById('rov').style.display='none'}
 async function weeklyReport(){
   try{await document.fonts.load('700 30px Cairo')}catch(e){}
-  const ws=weekStart(),now=Date.now()+1,pw=ws-6048e5,list=S(),m=meta[cur],tot=list.reduce((a,s)=>a+s.score,0),pct=Math.max(0,Math.min(100,Math.round(tot/m.target*100)));
+  const ws=weekStart(),now=Date.now()+1,pw=ws-6048e5,list=S(),m=meta[cur],tot=list.reduce((a,s)=>a+s.score,0),gs=curStage(m,tot),pct=Math.max(0,Math.min(100,Math.round(tot/gs.t*100)));
   const top=list.map(s=>[s,wk(s,ws,now)]).sort((a,b)=>b[1]-a[1])[0],im=list.map(s=>[s,wk(s,ws,now)-wk(s,pw,ws)]).sort((a,b)=>b[1]-a[1])[0];
   const W=1080,rh=100,n=Math.min(list.length,14),H=550+n*rh+360;
   const c=document.createElement('canvas');c.width=W;c.height=H;
@@ -668,10 +703,10 @@ async function weeklyReport(){
     T(s.score+' نقطة',100,y+65,'#fcd34d',900,32,'left');
   });
   const y2=550+n*rh+20;
-  T('🎯 هدف الحلقة: '+m.prize,W-70,y2+30,'#fff',700,34);
+  T('🎯 هدف الحلقة: '+gs.p,W-70,y2+30,'#fff',700,34);
   R(70,y2+75,W-140,38,19,'#0f172a');
   const fw=Math.max(38,(W-140)*pct/100);R(W-70-fw,y2+75,fw,38,19,'#10b981');
-  T(tot+' / '+m.target+'  ('+pct+'%)',W/2,y2+95,'#fff',700,26,'center');
+  T(tot+' / '+gs.t+'  ('+pct+'%)',W/2,y2+95,'#fff',700,26,'center');
   T(QUOTES[Math.floor(Math.random()*QUOTES.length)],W/2,y2+165,'#fcd34d',600,30,'center');
   T('المعلم: '+TN(),W/2,y2+225,'#e2e8f0',700,34,'center');
   const url=c.toDataURL('image/png');
@@ -798,7 +833,7 @@ function renderPrize(){
   if(!ks.length){el.className='';el.innerHTML='';el.style.borderColor='';return}
   const k=ks[0],w=winners(topOf(k)),mpz=meta.cfg&&meta.cfg.mprize,cpz=meta.cfg&&meta.cfg.cprize,cl=catLines(k,true);
   el.className='goal';el.style.borderColor='var(--gold)';
-  el.innerHTML=`<div class="gtop"><span>🏆 فائز ${esc(mlab(k))}${w.length>1?' (تعادل)':''}</span><span style="color:#94a3b8;font-weight:400;font-size:.85rem">${mpz?'الجائزة: '+esc(mpz):''}</span></div>${w.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${w.map((x,i)=>`<button class="btn add" title="شهادة" onclick="certMonth('${k}',${i})">📜 ${esc(x.a||'')} ${esc(x.n)} · ${x.p} نقطة</button>`).join('')}</div>`:''}${cl?`<div class="st" style="color:#fcd34d">🎖️ الجوائز التخصصية${cpz?' · '+esc(cpz):''} <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(اضغط الاسم لشهادته)</span></div>${cl}`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" style="background:var(--pri)" onclick="doneMonth('${k}')">✅ تم تسليم الجوائز</button><button class="btn" onclick="openHall()">🏅 لوحة الشرف</button></div>${ks.length>1?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${ks.length-1} شهور سابقة لم تُسجَّل كمُسلَّمة (في لوحة الشرف)</div>`:''}`;
+  el.innerHTML=`<div class="gtop"><span>🏆 فائز ${esc(mlab(k))}${w.length>1?' (تعادل)':''}</span><span style="color:#94a3b8;font-weight:400;font-size:.85rem">${mpz?'الجائزة: '+esc(mpz):''}</span></div>${w.length?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${w.map((x,i)=>`<button class="btn add" title="شهادة" onclick="certMonth('${k}',${i})">📜 ${esc(x.a||'')} ${esc(x.n)} · ${x.p} نقطة</button>`).join('')}</div>`:''}${cl?`<div class="st" style="color:#fcd34d">🎖️ الجوائز التخصصية${cpz?' · '+esc(cpz):''} <span style="color:#94a3b8;font-weight:400;font-size:.8rem">(اضغط الاسم لشهادته)</span></div>${cl}`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" style="background:var(--pri)" onclick="doneMonth('${k}')">✅ تم تسليم الجوائز</button><button class="btn add" onclick="openShop('${k}')">🛍️ متجر ${esc(mlab(k))}</button><button class="btn" onclick="openHall()">🏅 لوحة الشرف</button></div>${ks.length>1?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${ks.length-1} شهور سابقة لم تُسجَّل كمُسلَّمة (في لوحة الشرف)</div>`:''}`;
 }
 function doneMonth(k){snap('تسليم جوائز '+mlab(k));mdone()[k]={t:Date.now(),top:topOf(k),cats:catsOf(k)};render();toast('✅ سُجّل تسليم جوائز '+mlab(k))}
 function openHall(){
@@ -993,6 +1028,67 @@ function certCat(k,id,i){
   const cpz=meta.cfg&&meta.cfg.cprize;
   makeCert({name:w.n,avatar:w.a,line:'لتميّزه في «'+c.n+'» خلال '+mlab(k)+(cpz?' ونيله جائزة: '+cpz:'')});
 }
+/* ---- متجر الشهر: جائزة واحدة لكل طالب، والخصم افتراضي (يُسجَّل المتبقي ولا تتأثر نقاط الشهر ولا الترتيب) ---- */
+let shopK=null;
+const shopLab=x=>x===curKey()?labelOf(new Date(),calOf()):mlab(x);
+function openShop(k){
+  if(cur!=='local')switchLeague('local');
+  shopK=k||curKey();renderShop();document.getElementById('shov').style.display='flex';
+}
+function closeShop(){document.getElementById('shov').style.display='none'}
+function shopTab(k){shopK=k;renderShop()}
+function renderShop(){
+  const k=shopK,T=tiersOf(),list=[...S()].sort((a,b)=>mp(b,k)-mp(a,k)||b.score-a.score);
+  const pr=SHOP.map((x,i)=>({i,p:x[0],n:x[1]})).filter(x=>x.n&&x.p>0).sort((a,b)=>a.p-b.p);
+  const keys=[...new Set([curKey(),...pastKeys().slice(0,3),k])];
+  const tabs=`<div class="tabs" style="margin-bottom:10px;flex-wrap:wrap">${keys.map(x=>`<button class="tab ${x===k?'on':''}" style="font-size:.8rem;padding:8px 6px" onclick="shopTab('${x}')">${esc(shopLab(x))}${x===curKey()?' ●':''}</button>`).join('')}</div>`;
+  const tl=t=>t<0?'🎁 أخرى':TIERN[t];
+  const legend=`<details style="margin-bottom:10px"><summary style="cursor:pointer;color:#fcd34d">📋 قائمة الجوائز (${pr.length})</summary>${[-1,0,1,2,3].map(t=>{const g=pr.filter(x=>tierIdx(x.p)===t);return g.length?`<div style="margin:6px 0;font-size:.88rem"><b>${tl(t)}${t>=0?' (من '+T[t]+')':''}:</b> ${g.map(x=>esc(x.n)+' <b>'+x.p+'</b>').join(' · ')}</div>`:''}).join('')}</details>`;
+  const need={};let notPicked=0;
+  const rows=[],idle=[];
+  list.forEach(s=>{
+    const p=mp(s,k),c=(s.shop||{})[k];
+    if(!p&&!c){idle.push(s.name);return}
+    const ti=tierIdx(p),av=pr.filter(x=>x.p<=p);
+    let body,col='#64748b';
+    if(c){
+      col=c.dv?'var(--em)':'var(--gold)';
+      if(!c.dv)need[c.n]=(need[c.n]||0)+1;
+      body=`<div style="margin-top:6px">🛍️ <b>${esc(c.n)}</b> <small style="color:#94a3b8">(${c.p} نقطة · المتبقي ${p-c.p} تُصفَّر)</small></div><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ${c.dv?'add':''}" onclick="shopDeliver(${s.id})">${c.dv?'✅ تم التسليم':'⬜ تسليم الجائزة'}</button><button class="btn" onclick="shopClear(${s.id})">✏️ تغيير الاختيار</button></div>`;
+    }else if(av.length){
+      notPicked++;col='var(--cy)';
+      const best=av[av.length-1];let h='',last=-2;
+      av.forEach(x=>{const t=tierIdx(x.p);if(t!==last){if(last!==-2)h+='</optgroup>';h+=`<optgroup label="${tl(t)}">`;last=t}h+=`<option value="${x.i}" ${x===best?'selected':''}>${esc(x.n)} — ${x.p} نقطة</option>`});
+      h+='</optgroup>';
+      body=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><select id="shs${s.id}" style="flex:1;min-width:0;background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px">${h}</select><button class="btn add" onclick="shopPick(${s.id})">✅ اختيار</button></div>`;
+    }else{
+      body=`<div style="margin-top:6px;color:#94a3b8;font-size:.88rem">${pr.length?'لم يبلغ أول جائزة: باقي '+(pr[0].p-p)+' نقطة':'أضف جوائز من ⚙️ الإعدادات'}</div>`;
+    }
+    rows.push(`<div class="he" style="display:block;border-right-color:${col}"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${esc(s.avatar)} ${esc(s.name)}</b><span style="color:#fcd34d">⭐ ${p} نقطة · ${ti<0?'—':TIERN[ti]}</span></div>${body}</div>`);
+  });
+  const nl=Object.keys(need).map(n=>esc(n)+' ×'+need[n]).join('، ');
+  document.getElementById('shBody').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin:0 0 10px">لكل طالب جائزة واحدة يختارها من الجوائز التي بلغتها نقاطه. الخصم افتراضي: يُسجَّل ما استُبدل والمتبقي، ولا تتأثر نقاط الشهر ولا الترتيب.</p>${tabs}${legend}${nl?`<div class="goal" style="margin-bottom:10px;padding:10px 12px"><b>🧾 المطلوب تجهيزه:</b> ${nl}</div>`:''}${notPicked?`<div style="color:#67e8f9;font-size:.88rem;margin-bottom:6px">⏳ لم يختر بعد: ${notPicked} طالب</div>`:''}${rows.join('')||'<div class="empty">لا نقاط في هذا الشهر بعد.</div>'}${idle.length?`<div style="color:#94a3b8;font-size:.82rem;margin-top:10px">بلا نقاط هذا الشهر: ${idle.map(esc).join('، ')}</div>`:''}`;
+}
+function shopPick(id){
+  const s=find(id),k=shopK,el=document.getElementById('shs'+id);if(!s||!el)return;
+  const pz=SHOP[+el.value];if(!pz||pz[0]>mp(s,k)){toast('نقاط الطالب لا تكفي لهذه الجائزة');return}
+  if((s.shop||{})[k]){toast('اختار جائزته مسبقاً');return}
+  if(!confirm(`تأكيد: ${s.name} ← ${pz[1]} (${pz[0]} نقطة)؟`))return;
+  snap('جائزة '+s.name);
+  (s.shop=s.shop||{})[k]={n:pz[1],p:pz[0],t:Date.now()};
+  log(s,0,'🛍️ جائزة '+shopLab(k)+': '+pz[1],{spent:pz[0]});
+  beep(true);if(typeof confetti==='function')confetti({particleCount:70,spread:70,origin:{y:.4}});
+  render();renderShop();
+}
+function shopClear(id){
+  const s=find(id),k=shopK;if(!s||!(s.shop||{})[k])return;
+  if(!confirm(`إلغاء اختيار ${s.name} (${s.shop[k].n}) ليختار من جديد؟`))return;
+  snap('إلغاء جائزة '+s.name);delete s.shop[k];render();renderShop();
+}
+function shopDeliver(id){
+  const s=find(id),k=shopK,c=s&&(s.shop||{})[k];if(!c)return;
+  c.dv=!c.dv;render();renderShop();
+}
 /* ---- حزم الإعدادات ---- */
 function bunSec(){
   const items=draft.pos.map((p,j)=>[p,j]).filter(x=>String(x[0][1]).trim());
@@ -1004,7 +1100,7 @@ function togBun(i,j){const l=draft.pos[j][1],b=draft.bun[i],x=b.k.indexOf(l);x>=
 function renameItem(i,v){const old=draft.pos[i][1];draft.bun.forEach(b=>{const x=b.k.indexOf(old);if(x>=0)b.k[x]=v});draft.pos[i][1]=v}
 let draft=null;
 function openSet(){
-  draft={pos:LEAGUES[cur].pos.map(a=>[...a]),neg:LEAGUES[cur].neg.map(a=>[...a]),shop:SHOP.map(a=>[...a]),bun:(LEAGUES[cur].bun||[]).map(b=>({n:b.n,k:[...b.k]}))};
+  draft={pos:LEAGUES[cur].pos.map(a=>[...a]),neg:LEAGUES[cur].neg.map(a=>[...a]),shop:SHOP.map(a=>[...a]),tiers:[...tiersOf()],goals:goalsOf(meta[cur]).map(g=>[g.t,g.p]),bun:(LEAGUES[cur].bun||[]).map(b=>({n:b.n,k:[...b.k]}))};
   document.getElementById('setH').value=meta.cfg.halaqa||'';document.getElementById('setT').value=meta.cfg.teacher||'';document.getElementById('setC').value=meta.cfg.closeDay!=null?meta.cfg.closeDay:4;document.getElementById('setCal').value=calOf();document.getElementById('setMP').value=meta.cfg.mprize||'';document.getElementById('setCP').value=meta.cfg.cprize||'';
   drawSet();document.getElementById('sov').style.display='flex';
 }
@@ -1012,9 +1108,9 @@ function closeSet(){document.getElementById('sov').style.display='none'}
 function drawSet(){
   const row=(k,i,a)=>`<div class="custom" style="margin-top:6px"><input style="flex:1;min-width:0" placeholder="اكتب البند" value="${esc(a[1])}" oninput="${k==='pos'?`renameItem(${i},this.value)`:`draft.${k}[${i}][1]=this.value`}"><input type="number" min="1" style="width:72px" value="${Math.abs(a[0])}" oninput="draft.${k}[${i}][0]=${k==='neg'?'-':''}Math.abs(+this.value)"><button class="btn danger" onclick="delRow('${k}',${i})">🗑</button></div>`;
   const sec=(k,t,c)=>`<div class="st" style="color:${c}">${t}</div>`+draft[k].map((a,i)=>row(k,i,a)).join('')+`<button class="btn" style="margin-top:8px" onclick="addRow('${k}')">➕ إضافة بند</button>`;
-  document.getElementById('setLists').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin-top:12px">البنود التالية خاصة بـ <b>${cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد'}</b>، وللتعديل على الأخرى انتقل لتبويبها ثم افتح الإعدادات.</p>`+sec('pos','✨ بنود الإضافة (الرقم = عدد النقاط)','var(--em)')+sec('neg','⚠️ بنود الخصم (الرقم = النقاط المخصومة)','var(--rose)')+sec('shop','🛍️ جوائز المتجر (الرقم = التكلفة بالنقاط)','#fcd34d')+bunSec();
+  document.getElementById('setLists').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin-top:12px">البنود التالية خاصة بـ <b>${cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد'}</b>، وللتعديل على الأخرى انتقل لتبويبها ثم افتح الإعدادات.</p>`+sec('pos','✨ بنود الإضافة (الرقم = عدد النقاط)','var(--em)')+sec('neg','⚠️ بنود الخصم (الرقم = النقاط المخصومة)','var(--rose)')+`<p style="color:#94a3b8;font-size:.85rem;margin-top:14px">🛍️ <b>المتجر يعمل على الحلقة الحضورية</b>: كل طالب يختار جائزة واحدة آخر الشهر، والرقم هو الحد الأدنى من نقاط الشهر لنيلها.</p>`+sec('shop','🛍️ جوائز المتجر (الرقم = النقاط المطلوبة)','#fcd34d')+`<div class="st" style="color:#fcd34d">🏷️ حدود مستويات المتجر (أقل نقاط للمستوى)</div><div class="custom" style="gap:6px">${TIERN.map((n,i)=>`<label style="flex:1;min-width:70px;font-size:.78rem;color:#cbd5e1">${n}<input type="number" min="1" style="width:100%" value="${draft.tiers[i]}" oninput="draft.tiers[${i}]=Math.abs(+this.value)||1"></label>`).join('')}</div>`+sec('goals','🎯 أهداف الحلقة الجماعية (الرقم = إجمالي نقاط الحلقة، ويُنال الهدف عند بلوغه)','#67e8f9')+bunSec();
 }
-function addRow(k){draft[k].push([k==='neg'?-1:k==='shop'?10:1,'']);drawSet()}
+function addRow(k){draft[k].push([k==='neg'?-1:k==='shop'?100:k==='goals'?1000:1,'']);drawSet()}
 function delRow(k,i){draft[k].splice(i,1);drawSet()}
 function saveSet(){
   meta.cfg=Object.assign(meta.cfg||{},{halaqa:document.getElementById('setH').value.trim(),teacher:document.getElementById('setT').value.trim(),closeDay:+document.getElementById('setC').value,cal:document.getElementById('setCal').value,mprize:document.getElementById('setMP').value.trim(),cprize:document.getElementById('setCP').value.trim()});
@@ -1025,6 +1121,8 @@ function saveSet(){
   meta.items=meta.items||{};
   for(const k of ['local','remote'])meta.items[k]={pos:LEAGUES[k].pos,neg:LEAGUES[k].neg,bun:LEAGUES[k].bun||[]};
   meta.items.shop=[...SHOP];
+  meta.cfg.tiers=[...draft.tiers].map(x=>+x||1).sort((a,b)=>a-b);
+  meta[cur].goals=ok(draft.goals).map(a=>({t:a[0],p:String(a[1]).trim()}));
   closeSet();render();toast('✅ تم حفظ الإعدادات');
 }
 document.getElementById('quote').textContent=QUOTES[Math.floor(Math.random()*QUOTES.length)];
@@ -1035,9 +1133,11 @@ window.addEventListener('click',e=>{
   if(e.target.id==='rov')closeRep();
   if(e.target.id==='pov')closePov();
   if(e.target.id==='fov')closeHall();
+  if(e.target.id==='shov')closeShop();
 });
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+if(meta.cfg.syncV!==1){syncRemote();meta.cfg.syncV=1}
 render();
 if(!meta.cfg.halaqa)openSet();
 </script>
