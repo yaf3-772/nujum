@@ -92,6 +92,14 @@ header p{color:#94a3b8}
 @media(max-width:560px){.podium-grid{height:200px}.nm{font-size:1rem}.pn{font-size:.9rem}.pav{font-size:1.8rem}}
 :focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.shc{display:flex;flex-direction:column;align-items:center;gap:3px;width:104px;padding:6px;border-radius:12px;background:rgba(245,158,11,.12);color:#fde68a;font-size:.8rem;text-align:center;line-height:1.3}
+.shc img,.shph{width:92px;height:76px;object-fit:cover;border-radius:8px;cursor:zoom-in;background:#0a0f1d}
+.shph{display:flex;align-items:center;justify-content:center;font-size:1.6rem;cursor:default}
+.shth{width:44px;height:44px;flex:none;border-radius:8px;border:1px dashed #64748b;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:#0a0f1d}
+.shth img{width:100%;height:100%;object-fit:cover}
+.shpv{width:44px;height:44px;object-fit:cover;border-radius:8px;cursor:zoom-in;flex:none}
+#zov{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:99;padding:16px}
+#zov img{max-width:100%;max-height:100%;border-radius:12px}
 </style>
 </head>
 <body>
@@ -280,6 +288,10 @@ const SHOP3=[[50,'🃏 بطاقات لاعبين'],[65,'🎮 بطاقة شحن �
  [120,'⚽ كرة صغيرة'],[140,'🎮 بطاقة شحن متوسطة'],[165,'🎤 اختيار نشاط ختام الحلقة'],
  [200,'📱 كفر جوال'],[220,'👕 قميص فريقه المفضل'],[240,'🕹️ ساعة لعب في صالة ألعاب مع صديق'],[255,'🔋 باور بانك'],[270,'🎳 بولينج أو كارتينج'],
  [340,'🎧 سماعات ألعاب'],[370,'🎮 بطاقة شحن كبيرة'],[395,'⌚ ساعة'],[420,'🏟️ حضور مباراة مباشرة']];
+const SHOP4=[[50,'✏️ قلم'],[60,'🟡 لعبة أربعة في صف (الأصفر والأحمر)','images/p-four-connect.jpg'],[80,'🔫 لعبة المسدس','images/p-gel-blaster.jpg'],
+ [120,'⚽ كورة'],[130,'💳 كرت شحن 10 دولار'],[145,'🎧 سماعة ألعاب HOOTOO','images/p-hootoo-ht-ep84.jpg'],[155,'🎧 سماعة لاسلكية P9','images/p-p9-headphones.jpg'],[165,'⌚ ساعة ذكية'],
+ [340,'🎮 يد سوني 5']];
+/* التسعيرة المعتمدة: تشجيعية 50-80 · جيدة 120-165 · مميزة 200-270 (فارغة عمداً) · كبرى 340-420 */
 const TIERN=['🥉 تشجيعية','🥈 جيدة','🥇 مميزة','💎 كبرى'];
 const tiersOf=()=>{const t=meta.cfg&&meta.cfg.tiers;return Array.isArray(t)&&t.length===4?t:[50,120,200,340]};
 const tierIdx=p=>tiersOf().reduce((a,m,i)=>p>=m?i:a,-1);
@@ -298,9 +310,14 @@ function applyMeta(){
   /* مستويات الطلاب (أسماء وحدود) يعدّلها المعلم من الإعدادات */
   if(Array.isArray(meta.cfg.levels)&&meta.cfg.levels.length>=2)LEVELS.splice(0,LEVELS.length,...meta.cfg.levels.map(a=>[+a[0]||0,String(a[1])]));
   /* ترحيل المتجر للنظام الجديد (مرة واحدة): جوائز المستويات الافتراضية إن لم تكن هناك جوائز مخصصة */
-  if(meta.cfg.shopV!==3){
+  if((meta.cfg.shopV||0)<3){
     if(!it||!it.shop||!it.shop.length||JSON.stringify(it.shop)===JSON.stringify(SHOP2))SHOP.splice(0,SHOP.length,...SHOP3.map(a=>[...a]));
     meta.items=meta.items||{};meta.items.shop=[...SHOP];meta.cfg.shopV=3;
+  }
+  /* النسخة 4: قائمة جوائز جديدة بالصور (تُطبَّق مرة واحدة؛ بعدها تعديلات المعلم تُحفظ كما هي) */
+  if((meta.cfg.shopV||0)<5){
+    SHOP.splice(0,SHOP.length,...SHOP4.map(a=>[...a]));
+    meta.items=meta.items||{};meta.items.shop=[...SHOP];meta.cfg.shopV=5;
   }
 }
 applyMeta();
@@ -627,10 +644,8 @@ function knightsHtml(list){
   let w=ws,lab='هذا الأسبوع',t=top(ws,now);
   if(!t.length){w=pw;lab='الأسبوع الماضي';t=top(pw,ws)}
   if(!t.length)return '';
-  const kd=(meta[cur].kd=meta[cur].kd||{}),done=!!kd[w];
-  return `<div class="hero" style="grid-column:1/-1">⚔️ فرسان ${lab}<b>${t.map((x,i)=>`<span style="display:inline-block;white-space:nowrap;margin:2px 8px">${['🥇','🥈','🥉'][i]} ${esc(x[0].name)} <bdi dir="ltr">(${x[1]})</bdi></span>`).join('')}</b><button class="btn ${done?'add':''}" style="margin-top:8px" onclick="toggleKd(${w})">${done?'✅ سُلّمت الحلويات':'⬜ تسليم كرتون الحلويات'}</button></div>`;
+  return `<div class="hero" style="grid-column:1/-1">⚔️ فرسان ${lab}<b>${t.map((x,i)=>`<span style="display:inline-block;white-space:nowrap;margin:2px 8px">${['🥇','🥈','🥉'][i]} ${esc(x[0].name)} <bdi dir="ltr">(${x[1]})</bdi></span>`).join('')}</b></div>`;
 }
-function toggleKd(w){const kd=(meta[cur].kd=meta[cur].kd||{});kd[w]=!kd[w];render()}
 /* الأهداف الجماعية: قائمة مراحل مرتبة بعدد النقاط (الهدف الحالي = أول مرحلة لم تتحقق) */
 function goalsOf(m){
   if(!Array.isArray(m.goals)||!m.goals.length){
@@ -1078,7 +1093,7 @@ function renderShop(){
   const keys=[...new Set([curKey(),...pastKeys().slice(0,3),k])];
   const tabs=`<div class="tabs" style="margin-bottom:10px;flex-wrap:wrap">${keys.map(x=>`<button class="tab ${x===k?'on':''}" style="font-size:.85rem;padding:8px 6px" onclick="shopTab('${x}')">${esc(shopLab(x))}${x===curKey()?' (الحالي)':''}</button>`).join('')}</div>`;
   const tl=t=>t<0?'🎁 أخرى':TIERN[t];
-  const cat=[-1,0,1,2,3].map(t=>{const g=pr.filter(x=>tierIdx(x.p)===t);return g.length?`<div style="margin:8px 0"><div class="st" style="color:#fcd34d;margin:0 0 4px">${tl(t)}${t>=0?' · من '+T[t]+' نقطة':''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${g.map(x=>`<span class="lv" style="background:rgba(245,158,11,.15);color:#fde68a;font-size:.85rem">${esc(x.n)} <b>${x.p}</b></span>`).join('')}</div></div>`:''}).join('');
+  const cat=[-1,0,1,2,3].map(t=>{const g=pr.filter(x=>tierIdx(x.p)===t);return g.length?`<div style="margin:8px 0"><div class="st" style="color:#fcd34d;margin:0 0 4px">${tl(t)}${t>=0?' · من '+T[t]+' نقطة':''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${g.map(x=>`<div class="shc">${SHOP[x.i][2]?`<img src="${esc(SHOP[x.i][2])}" alt="" loading="lazy" onclick="zoomShop(${x.i})">`:'<div class="shph">🎁</div>'}<span>${esc(x.n)}</span><b>${x.p} نقطة</b></div>`).join('')}</div></div>`:''}).join('');
   const need={};let notPicked=0;
   const rows=list.map(s=>{
     const p=mp(s,k),c=(s.shop||{})[k],ti=tierIdx(p),av=pr.filter(x=>x.p<=p);
@@ -1086,7 +1101,8 @@ function renderShop(){
     if(c){
       col=c.dv?'var(--em)':'var(--gold)';
       if(!c.dv)need[c.n]=(need[c.n]||0)+1;
-      body=`<div style="margin-top:6px">🛍️ <b>${esc(c.n)}</b> <small style="color:#94a3b8">(${c.p} نقطة · المتبقي ${p-c.p} تُصفَّر)</small></div><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ${c.dv?'add':''}" onclick="shopDeliver(${s.id})">${c.dv?'✅ تم التسليم':'⬜ تسليم الجائزة'}</button><button class="btn" onclick="shopClear(${s.id})">✏️ تغيير الاختيار</button></div>`;
+      const ci=SHOP.findIndex(z=>z[1]===c.n),cim=ci>=0&&SHOP[ci][2]||'';
+      body=`<div style="margin-top:6px;display:flex;align-items:center;gap:8px">${cim?`<img class="shpv" src="${esc(cim)}" alt="" onclick="zoomShop(${ci})">`:''}<span>🛍️ <b>${esc(c.n)}</b> <small style="color:#94a3b8">(${c.p} نقطة · المتبقي ${p-c.p} تُصفَّر)</small></span></div><div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ${c.dv?'add':''}" onclick="shopDeliver(${s.id})">${c.dv?'✅ تم التسليم':'⬜ تسليم الجائزة'}</button><button class="btn" onclick="shopClear(${s.id})">✏️ تغيير الاختيار</button></div>`;
     }else if(!p){
       body=`<div style="margin-top:6px;color:#94a3b8;font-size:.88rem">🔒 لا نقاط له هذا الشهر، فلا يستطيع الشراء</div>`;
     }else if(av.length){
@@ -1094,7 +1110,8 @@ function renderShop(){
       const best=av[av.length-1];let h='',last=-2;
       av.forEach(x=>{const t=tierIdx(x.p);if(t!==last){if(last!==-2)h+='</optgroup>';h+=`<optgroup label="${tl(t)}">`;last=t}h+=`<option value="${x.i}" ${x===best?'selected':''}>${esc(x.n)} — ${x.p} نقطة</option>`});
       h+='</optgroup>';
-      body=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><select id="shs${s.id}" style="flex:1;min-width:0;background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px">${h}</select><button class="btn add" onclick="shopPick(${s.id})">🛒 شراء</button></div>`;
+      const bim=SHOP[best.i][2]||'';
+      body=`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center"><img id="shp${s.id}" class="shpv" src="${esc(bim)}" alt="" style="${bim?'':'display:none'}" onclick="zoomShop(+document.getElementById('shs${s.id}').value)"><select id="shs${s.id}" onchange="shopPrev(${s.id})" style="flex:1;min-width:0;background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px">${h}</select><button class="btn add" onclick="shopPick(${s.id})">🛒 شراء</button></div>`;
     }else{
       body=`<div style="margin-top:6px;color:#94a3b8;font-size:.88rem">${pr.length?'🔒 نقاطه لا تكفي بعد: باقي '+(pr[0].p-p)+' نقطة لأول جائزة':'لا توجد جوائز في المتجر'}</div>`;
     }
@@ -1120,6 +1137,8 @@ function shopClear(id){
   if(!confirm(`إلغاء شراء ${s.name} (${s.shop[k].n}) ليختار من جديد؟`))return;
   snap('إلغاء جائزة '+s.name);delete s.shop[k];render();
 }
+function zoomShop(i){const z=SHOP[i];if(!z||!z[2])return;document.getElementById('zimg').src=z[2];document.getElementById('zov').style.display='flex'}
+function shopPrev(id){const el=document.getElementById('shs'+id),im=document.getElementById('shp'+id),z=el&&SHOP[+el.value];if(!im)return;const u=z&&z[2]||'';im.src=u;im.style.display=u?'':'none'}
 function shopDeliver(id){
   const s=find(id),k=shopK,c=s&&(s.shop||{})[k];if(!c)return;
   c.dv=!c.dv;render();
@@ -1143,7 +1162,7 @@ function closeSet(){document.getElementById('sov').style.display='none'}
 function drawSet(){
   const row=(k,i,a)=>`<div class="custom" style="margin-top:6px"><input style="flex:1;min-width:0" placeholder="اكتب البند" value="${esc(a[1])}" oninput="${k==='pos'?`renameItem(${i},this.value)`:`draft.${k}[${i}][1]=this.value`}"><input type="number" min="1" style="width:72px" value="${Math.abs(a[0])}" oninput="draft.${k}[${i}][0]=${k==='neg'?'-':''}Math.abs(+this.value)"><button class="btn danger" onclick="delRow('${k}',${i})">🗑</button></div>`;
   const sec=(k,t,c)=>`<div class="st" style="color:${c}">${t}</div>`+draft[k].map((a,i)=>row(k,i,a)).join('')+`<button class="btn" style="margin-top:8px" onclick="addRow('${k}')">➕ إضافة بند</button>`;
-  document.getElementById('setLists').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin-top:12px">البنود التالية خاصة بـ <b>${cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد'}</b>، وللتعديل على الأخرى انتقل لتبويبها ثم افتح الإعدادات.</p>`+sec('lv','🌱 مستويات الطلاب (الرقم = مجموع النقاط للوصول إلى المستوى؛ الأول يبدأ من 0)','#a7f3d0')+`<div class="st" style="color:#a7f3d0">قوالب جاهزة (تغيّر الأسماء فقط، وتعدّلها بعد ذلك كما تشاء):</div><div style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(LVPRESETS).map(k=>`<button class="btn" onclick="lvPreset('${k}')">${LVPRESETS[k].t}</button>`).join('')}</div>`+sec('pos','✨ بنود الإضافة (الرقم = عدد النقاط)','var(--em)')+sec('neg','⚠️ بنود الخصم (الرقم = النقاط المخصومة)','var(--rose)')+`<p style="color:#94a3b8;font-size:.85rem;margin-top:14px">🛍️ <b>المتجر يعمل على الحلقة الحضورية</b>: كل طالب يختار جائزة واحدة آخر الشهر، والرقم هو الحد الأدنى من نقاط الشهر لنيلها.</p>`+sec('shop','🛍️ جوائز المتجر (الرقم = النقاط المطلوبة)','#fcd34d')+`<div class="st" style="color:#fcd34d">🏷️ حدود مستويات المتجر (أقل نقاط للمستوى)</div><div class="custom" style="gap:6px">${TIERN.map((n,i)=>`<label style="flex:1;min-width:70px;font-size:.78rem;color:#cbd5e1">${n}<input type="number" min="1" style="width:100%" value="${draft.tiers[i]}" oninput="draft.tiers[${i}]=Math.abs(+this.value)||1"></label>`).join('')}</div>`+sec('goals','🎯 أهداف الحلقة الجماعية (الرقم = إجمالي نقاط الحلقة، ويُنال الهدف عند بلوغه)','#67e8f9')+bunSec();
+  document.getElementById('setLists').innerHTML=`<p style="color:#94a3b8;font-size:.85rem;margin-top:12px">البنود التالية خاصة بـ <b>${cur==='local'?'الحلقة الحضورية':'الحلقة عن بعد'}</b>، وللتعديل على الأخرى انتقل لتبويبها ثم افتح الإعدادات.</p>`+sec('lv','🌱 مستويات الطلاب (الرقم = مجموع النقاط للوصول إلى المستوى؛ الأول يبدأ من 0)','#a7f3d0')+`<div class="st" style="color:#a7f3d0">قوالب جاهزة (تغيّر الأسماء فقط، وتعدّلها بعد ذلك كما تشاء):</div><div style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(LVPRESETS).map(k=>`<button class="btn" onclick="lvPreset('${k}')">${LVPRESETS[k].t}</button>`).join('')}</div>`+sec('pos','✨ بنود الإضافة (الرقم = عدد النقاط)','var(--em)')+sec('neg','⚠️ بنود الخصم (الرقم = النقاط المخصومة)','var(--rose)')+`<p style="color:#94a3b8;font-size:.85rem;margin-top:14px">🛍️ <b>المتجر يعمل على الحلقة الحضورية</b>: كل طالب يختار جائزة واحدة آخر الشهر، والرقم هو الحد الأدنى من نقاط الشهر لنيلها.</p>`+shopSec()+`<div class="st" style="color:#fcd34d">🏷️ حدود مستويات المتجر (أقل نقاط للمستوى)</div><div class="custom" style="gap:6px">${TIERN.map((n,i)=>`<label style="flex:1;min-width:70px;font-size:.78rem;color:#cbd5e1">${n}<input type="number" min="1" style="width:100%" value="${draft.tiers[i]}" oninput="draft.tiers[${i}]=Math.abs(+this.value)||1"></label>`).join('')}</div>`+sec('goals','🎯 أهداف الحلقة الجماعية (الرقم = إجمالي نقاط الحلقة، ويُنال الهدف عند بلوغه)','#67e8f9')+bunSec();
 }
 /* قوالب أسماء المستويات (8 مستويات بحدود النقاط الحالية) */
 const LVPRESETS={
@@ -1151,6 +1170,22 @@ const LVPRESETS={
  mastery:{t:'📖 مراتب الإتقان',n:['📖 قارئ','🔰 مجتهد','🌿 راسخ','🏅 ماهر','⭐ نجم الحلقة','🌟 نجم متألق','👑 تاج الحلقة','💎 جوهرة الحلقة']},
  football:{t:'⚽ كرة القدم',n:['⚽ ناشئ','👟 لاعب','🎽 لاعب أساسي','🏃 هدّاف','⭐ نجم الفريق','🌟 نجم متألق','🏆 قائد الفريق','👑 أسطورة الحلقة']}
 };
+/* صفوف جوائز المتجر في الإعدادات: صورة (اضغط لإضافتها أو تغييرها) + الاسم + النقاط */
+function shopSec(){
+  const row=(a,i)=>`<div class="custom" style="margin-top:6px;align-items:center"><label class="shth" title="إضافة أو تغيير الصورة">${a[2]?`<img src="${esc(a[2])}" alt="">`:'📷'}<input type="file" accept="image/*" style="display:none" onchange="pickShopImg(${i},this)"></label><input style="flex:1;min-width:0" placeholder="اسم الجائزة" value="${esc(a[1])}" oninput="draft.shop[${i}][1]=this.value"><input type="number" min="1" style="width:72px" value="${Math.abs(a[0])}" oninput="draft.shop[${i}][0]=Math.abs(+this.value)">${a[2]?`<button class="btn" title="حذف الصورة" onclick="draft.shop[${i}][2]='';drawSet()">✖</button>`:''}<button class="btn danger" onclick="delRow('shop',${i})">🗑</button></div>`;
+  return `<div class="st" style="color:#fcd34d">🛍️ جوائز المتجر (الرقم = النقاط المطلوبة · اضغط 📷 لإضافة صورة للجائزة)</div>`+draft.shop.map(row).join('')+`<button class="btn" style="margin-top:8px" onclick="addRow('shop')">➕ إضافة بند</button>`;
+}
+function pickShopImg(i,inp){
+  const f=inp.files&&inp.files[0];if(!f||!draft.shop[i])return;
+  const r=new FileReader();
+  r.onload=()=>{const im=new Image();
+    im.onload=()=>{const M=480,k=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      draft.shop[i][2]=c.toDataURL('image/jpeg',.75);drawSet()};
+    im.onerror=()=>toast('تعذّر قراءة الصورة');im.src=r.result};
+  r.readAsDataURL(f);inp.value='';
+}
 function lvPreset(k){
   const P=LVPRESETS[k].n,keep=draft.lv.length===P.length;
   draft.lv=LEVELS0.map((a,i)=>[keep?draft.lv[i][0]:a[0],P[i]]);drawSet();
@@ -1194,5 +1229,6 @@ if(meta.cfg.syncV!==1){syncRemote();meta.cfg.syncV=1}
 render();
 if(!meta.cfg.halaqa)openSet();
 </script>
+<div id="zov" onclick="this.style.display='none'"><img id="zimg" alt=""></div>
 </body>
 </html>
