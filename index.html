@@ -98,7 +98,8 @@ header p{color:#94a3b8}
 .shth{width:44px;height:44px;flex:none;border-radius:8px;border:1px dashed #64748b;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:#0a0f1d}
 .shth img{width:100%;height:100%;object-fit:cover}
 .shpv{width:44px;height:44px;object-fit:cover;border-radius:8px;cursor:zoom-in;flex:none}
-#zov{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:99;padding:16px}
+#rov{z-index:110}
+#zov{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:120;padding:16px}
 #zov img{max-width:100%;max-height:100%;border-radius:12px}
 </style>
 </head>
@@ -176,7 +177,7 @@ header p{color:#94a3b8}
     <div class="mh"><h2>⚙️ الإعدادات</h2><button class="x" onclick="closeSet()">&times;</button></div>
     <div class="st">اسم الحلقة</div><input id="setH" class="fld" placeholder="مثال: حلقة أبي بكر الصديق">
     <div class="st">اسم المعلم</div><input id="setT" class="fld" placeholder="اسمك">
-    <div class="st">يوم إغلاق الأسبوع (منه تبدأ الاستحقاقات الأسبوعية بالظهور)</div><select id="setC" class="fld"><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option></select>
+    <div class="st">يوم إغلاق الأسبوع (منه تُضاف الاستحقاقات الأسبوعية تلقائياً)</div><select id="setC" class="fld"><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option><option value="6">السبت</option></select>
     <div class="st">حساب الشهر لجائزة الأفضل</div><select id="setCal" class="fld"><option value="g">ميلادي (نوفمبر، ديسمبر...)</option><option value="h">هجري (رجب، شعبان...)</option></select>
     <div class="st">جائزة أفضل طالب في الشهر (تظهر في الشاشة والشهادة)</div><input id="setMP" class="fld" placeholder="مثال: هدية قيّمة / رحلة">
     <div class="st">جوائز التخصص الشهرية (اختياري)</div><input id="setCP" class="fld" placeholder="مثال: هدية صغيرة لكل فائز">
@@ -788,24 +789,14 @@ function weeklySuggestions(){
   });
   return out.length?{ws,D,out}:null;
 }
+/* الاستحقاقات الأسبوعية تُضاف تلقائياً لكل من يستحقها (بدل لوحة الاقتراحات)، ويمكن التراجع عنها بزر ↩️ تراجع */
 function renderWeekly(){
-  const el=document.getElementById('weekly'),sg=weeklySuggestions();
-  if(!sg){el.className='';el.innerHTML='';return}
-  el.className='goal';
-  el.innerHTML=`<div class="gtop"><span>🗓️ استحقاقات ${sg.ws===weekStart()?'هذا الأسبوع':'الأسبوع الماضي'} المقترحة</span><span style="color:#94a3b8;font-weight:400;font-size:.85rem">أيام الحلقة المحسوبة: ${sg.D.length} · ألغِ التحديد عمّن لا تريد منحه</span></div>`+sg.out.map(o=>`<div class="st">${esc(o.label)} <span class="tp">+${o.pts}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${o.st.map(s=>{const off=wkOff.has(o.w.id+':'+s.id);return `<button class="btn ${off?'':'add'}" onclick="toggleWk('${o.w.id}',${s.id})">${off?'⬜':'✅'} ${esc(s.name)}</button>`}).join('')}<button class="btn" style="background:var(--pri)" onclick="awardWk('${o.w.id}')">منح المحدد</button></div>`).join('');
-}
-function toggleWk(id,sid){const k=id+':'+sid;wkOff.has(k)?wkOff.delete(k):wkOff.add(k);renderWeekly()}
-function awardWk(id){
+  const el=document.getElementById('weekly');el.className='';el.innerHTML='';
   const sg=weeklySuggestions();if(!sg)return;
-  const r=sg.out.find(o=>o.w.id===id);if(!r)return;
-  const pick=r.st.filter(s=>!wkOff.has(id+':'+s.id));
-  if(!pick.length){toast('لم تحدد أي طالب');return}
-  snap(`منح ${pick.length} طالب: ${r.label}`);
-  const ts=Math.min(Date.now(),sg.ws+7*864e5-1);
-  pick.forEach(s=>{change(s,r.pts,r.label,true,{ts,noAtt:true});s.wk=[...(s.wk||[]),sg.ws+':'+id]});
-  beep(true);
-  if(typeof confetti==='function')confetti({particleCount:70,spread:70,origin:{y:.5}});
-  toast(`✅ مُنح ${pick.length} طالب +${r.pts} نقطة`);render();
+  snap('استحقاقات أسبوعية تلقائية');
+  const ts=Math.min(Date.now(),sg.ws+7*864e5-1);let n=0;
+  sg.out.forEach(r=>r.st.forEach(st=>{change(st,r.pts,r.label,true,{ts,noAtt:true});st.wk=[...(st.wk||[]),sg.ws+':'+r.w.id];n++}));
+  if(n){save();setTimeout(()=>toast('🗓️ أُضيفت الاستحقاقات الأسبوعية تلقائياً ('+n+')'),200)}
 }
 function renderDaily(){
   const el=document.getElementById('daily'),sd=meta[cur].star,chosen=sd&&sd.d===dayKey()&&find(sd.id);
@@ -1028,9 +1019,9 @@ function nextLine(s){
   const nx=nextLv(s.score);
   return nx?`<span class="bd" style="display:block;color:#94a3b8;margin-top:2px">⬆️ باقي ${nx.need} على ${esc(nx.name)}</span><div style="height:5px;background:#0f172a;border-radius:4px;margin-top:3px;max-width:220px"><div style="height:100%;width:${nx.pct}%;background:linear-gradient(90deg,var(--em),#38bdf8);border-radius:4px"></div></div>`:`<span class="bd" style="display:block;color:#fcd34d">👑 وصل لأعلى مستوى</span>`;
 }
-function addCong(s,kind,txt,msg){
+function addCong(s,kind,txt,msg,bid){
   const a=(meta[cur].cg=meta[cur].cg||[]);
-  a.unshift({id:s.id,n:s.name,k:kind,t:txt,m:msg,ts:Date.now()});if(a.length>40)a.length=40;
+  a.unshift({id:s.id,n:s.name,k:kind,t:txt,m:msg,ts:Date.now(),b:bid});if(a.length>40)a.length=40;
 }
 /* يُستدعى مع كل رسم: يمنح الشارات ويرصد الترقيات (أول مرة تُمنح بصمت لما سبق) */
 function checkGrowth(){
@@ -1044,21 +1035,54 @@ function checkGrowth(){
     BADGES.forEach(b=>{
       if(s.bd[b.id]||bval(s,b.k)<b.v)return;
       s.bd[b.id]=Date.now();
-      if(!silent){newB.push([s,b]);addCong(s,'bd','نال شارة '+b.ic+' '+b.n,`بشرى سارة 🎉 نال ابنكم شارة «${b.ic} ${b.n}» (${b.d})`)}
+      if(!silent){newB.push([s,b]);addCong(s,'bd','نال شارة '+b.ic+' '+b.n,`بشرى سارة 🎉 نال ابنكم شارة «${b.ic} ${b.n}» (${b.d})`,b.id)}
     });
   });
   if(newB.length)setTimeout(()=>toast(newB.length===1?`🏅 ${newB[0][0].name} نال شارة ${newB[0][1].ic} ${newB[0][1].n}`:`🏅 ${newB.length} شارات جديدة نالها الطلاب`,true),1800);
 }
+/* معنى كل شارة (يظهر في صورة التكريم) */
+const BMEAN={
+ ext15:'حرصٌ على الزيادة في الحفظ فوق المقرر',ext50:'انطلاقة قوية في الحفظ الإضافي',ext150:'همّة عالية بلغت القمة في الزيادة',
+ rec10:'انتظام وثبات في تسميع المقرر',rec30:'مثابرة وصبر على تسميع المقرر',cl5:'إتقان التسميع دون أخطاء',cl20:'دقة عالية وإتقان متواصل في التسميع',
+ tj5:'إتقان أحكام التجويد وحسن الترتيل',hp3:'خُلُق التعاون ومساعدة الزملاء',rv10:'حرص على مراجعة المحفوظ وتثبيته',
+ st7:'التزام بحضور الحلقات دون انقطاع',st15:'مواظبة نادرة على الحضور'
+};
+/* صورة تكريم بالشارة (للمشاركة في قروب أولياء الأمور) */
+async function makeBadge(s,b){
+  await fontsReady();
+  const W=1080,H=1350,{c,x,T,R,fit,wrap}=mkCv(W,H);
+  const n=Object.keys(s.bd||{}).length;
+  R(24,24,W-48,H-48,40,null,'#f59e0b');R(48,48,W-96,H-96,30,null,'rgba(245,158,11,.4)');
+  T(HN(),W/2,122,'#10b981',700,38,'center');
+  T('🏅 شارة جديدة',W/2,225,'#fcd34d',900,96,'center');
+  T('تكريماً للطالب',W/2,320,'#94a3b8',600,40,'center');
+  const nm=(s.avatar?s.avatar+' ':'')+s.name;
+  T(nm,W/2,405,'#fff',900,fit(nm,900,88,W-200,44),'center');
+  const g=x.createRadialGradient(W/2,650,20,W/2,650,200);g.addColorStop(0,'#fde68a');g.addColorStop(1,'#b45309');
+  x.beginPath();x.arc(W/2,650,200,0,7);x.fillStyle=g;x.fill();
+  x.beginPath();x.arc(W/2,650,214,0,7);x.strokeStyle='rgba(252,211,77,.55)';x.lineWidth=8;x.stroke();
+  T(b.ic,W/2,660,'#fff',700,190,'center');
+  const bn='«'+b.n+'»';
+  T(bn,W/2,925,'#fcd34d',900,fit(bn,900,92,W-200,48),'center');
+  T('معنى الشارة',W/2,1005,'#94a3b8',600,34,'center');
+  wrap(BMEAN[b.id]||b.d,700,44,W-220).slice(0,2).forEach((l,i)=>T(l,W/2,1065+i*62,'#e2e8f0',700,44,'center'));
+  T('🎯 الشرط: '+b.d,W/2,1200,'#10b981',700,36,'center');
+  T('شاراته: '+n+' من '+BADGES.length+'  ·  '+dstr(new Date()),W/2,1250,'#94a3b8',600,30,'center');
+  T('المعلم: '+TN(),W/2,1303,'#e2e8f0',700,36,'center');
+  showImg(c,'🏅 صورة تكريم: '+b.n,'شارة-'+s.name+'-'+b.n+'.png');
+}
+function badgeImgFor(sid,bid){const s=find(sid),b=BADGES.find(z=>z.id===bid);if(s&&b)makeBadge(s,b)}
+function badgeImgCong(i){const e=(meta[cur].cg||[])[i];if(e&&e.b)badgeImgFor(e.id,e.b)}
 function renderBadgesBox(s){
   const el=document.getElementById('hBadges'),bd=s.bd||{},nx=nextLv(s.score);
   const earned=BADGES.filter(b=>bd[b.id]),lock=BADGES.filter(b=>!bd[b.id]);
-  el.innerHTML=`<div class="st" style="color:#fcd34d">🏅 الشارات (${earned.length} من ${BADGES.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${earned.map(b=>`<span class="lv" style="background:rgba(245,158,11,.22);color:#fde68a;font-size:.8rem;margin:0" title="${esc(b.d)}">${b.ic} ${esc(b.n)}</span>`).join('')}${lock.map(b=>`<span class="lv" style="opacity:.55;font-size:.75rem;margin:0" title="${esc(b.d)}">🔒 ${esc(b.n)} <bdi dir="ltr">${Math.min(bval(s,b.k),b.v)}/${b.v}</bdi></span>`).join('')}</div>${nx?`<div style="color:#94a3b8;font-size:.85rem;margin-top:8px">⬆️ باقي ${nx.need} نقطة على ${esc(nx.name)}</div>`:''}<div class="st" style="margin-top:12px">📜 الحركات</div>`;
+  el.innerHTML=`<div class="st" style="color:#fcd34d">🏅 الشارات (${earned.length} من ${BADGES.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${earned.map(b=>`<span class="lv" style="background:rgba(245,158,11,.22);color:#fde68a;font-size:.8rem;margin:0;cursor:pointer" title="${esc(b.d)} — اضغط لصورة التكريم" onclick="badgeImgFor(${s.id},'${b.id}')">${b.ic} ${esc(b.n)} 🖼️</span>`).join('')}${lock.map(b=>`<span class="lv" style="opacity:.55;font-size:.75rem;margin:0" title="${esc(b.d)}">🔒 ${esc(b.n)} <bdi dir="ltr">${Math.min(bval(s,b.k),b.v)}/${b.v}</bdi></span>`).join('')}</div>${nx?`<div style="color:#94a3b8;font-size:.85rem;margin-top:8px">⬆️ باقي ${nx.need} نقطة على ${esc(nx.name)}</div>`:''}${earned.length?'<div style="color:#94a3b8;font-size:.78rem;margin-top:6px">اضغط على أي شارة لتوليد صورة تكريم ترسلها للقروب</div>':''}<div class="st" style="margin-top:12px">📜 الحركات</div>`;
 }
 function renderCong(){
   const el=document.getElementById('cong'),a=meta[cur].cg||[];
   if(!a.length){el.className='';el.innerHTML='';return}
   el.className='goal';
-  el.innerHTML=`<div class="gtop"><span>📲 تهنئات جاهزة لأولياء الأمور (${a.length})</span><button class="btn" onclick="clearCong()">تجاهل الكل</button></div>`+a.slice(0,5).map((e,i)=>`<div class="he" style="margin-top:8px;gap:8px;flex-wrap:wrap"><div><div class="hr">${esc(e.n)}</div><div class="ht">${esc(e.t)}</div></div><div style="display:flex;gap:6px"><button class="btn add" onclick="sendCong(${i})">📲 إرسال</button><button class="btn" onclick="dismissCong(${i})">✕</button></div></div>`).join('')+(a.length>5?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${a.length-5} أخرى</div>`:'');
+  el.innerHTML=`<div class="gtop"><span>📲 تهنئات جاهزة لأولياء الأمور (${a.length})</span><button class="btn" onclick="clearCong()">تجاهل الكل</button></div>`+a.slice(0,5).map((e,i)=>`<div class="he" style="margin-top:8px;gap:8px;flex-wrap:wrap"><div><div class="hr">${esc(e.n)}</div><div class="ht">${esc(e.t)}</div></div><div style="display:flex;gap:6px">${e.k==='bd'&&e.b?`<button class="btn" style="background:var(--pri)" onclick="badgeImgCong(${i})">🖼️ صورة للقروب</button>`:''}<button class="btn add" onclick="sendCong(${i})">📲 إرسال</button><button class="btn" onclick="dismissCong(${i})">✕</button></div></div>`).join('')+(a.length>5?`<div style="color:#94a3b8;font-size:.8rem;margin-top:6px">+ ${a.length-5} أخرى</div>`:'');
 }
 function dismissCong(i){(meta[cur].cg||[]).splice(i,1);render()}
 function clearCong(){meta[cur].cg=[];render()}
